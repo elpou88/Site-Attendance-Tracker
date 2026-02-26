@@ -193,6 +193,23 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/attendance/update-location", requireAuth, async (req: any, res) => {
+    try {
+      const active = await storage.getActiveAttendance(req.user.id);
+      if (!active) {
+        return res.status(400).json({ message: "Not currently signed in" });
+      }
+      const { lat, lng } = req.body;
+      if (typeof lat !== "number" || typeof lng !== "number") {
+        return res.status(400).json({ message: "Valid GPS coordinates required" });
+      }
+      const record = await storage.updateAttendanceLocation(active.id, lat, lng);
+      return res.json(record);
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to update location" });
+    }
+  });
+
   app.get("/api/attendance/status", requireAuth, async (req: any, res) => {
     const active = await storage.getActiveAttendance(req.user.id);
     res.json({ signedIn: !!active, attendance: active || null });

@@ -21,6 +21,7 @@ import {
   UserPlus,
   LogOut,
   MapPin,
+  MapPinOff,
   Clock,
   Activity,
   FileText,
@@ -217,6 +218,12 @@ export default function AdminDashboard() {
                             <p className="text-xs text-muted-foreground">
                               Signed in at {format(new Date(record.signInTime), "h:mm a")}
                             </p>
+                            {record.signInLat && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <MapPin className="w-3 h-3 text-green-600" />
+                                {record.signInLat.toFixed(5)}, {record.signInLng?.toFixed(5)}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -232,9 +239,15 @@ export default function AdminDashboard() {
                             >
                               <Button variant="secondary" size="sm">
                                 <MapPin className="w-3.5 h-3.5 mr-1" />
-                                Location
+                                View Map
                               </Button>
                             </a>
+                          )}
+                          {!record.signInLat && (
+                            <Badge variant="secondary" className="text-xs">
+                              <MapPinOff className="w-3 h-3 mr-1" />
+                              No GPS
+                            </Badge>
                           )}
                         </div>
                       </div>
@@ -268,6 +281,18 @@ export default function AdminDashboard() {
                               {format(new Date(record.signInTime), "h:mm a")} -{" "}
                               {record.signOutTime && format(new Date(record.signOutTime), "h:mm a")}
                             </p>
+                            {(record.signInLat || record.signOutLat) && (
+                              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <MapPin className="w-3 h-3 text-green-600 shrink-0" />
+                                {record.signInLat && (
+                                  <span>In: {record.signInLat.toFixed(4)}, {record.signInLng?.toFixed(4)}</span>
+                                )}
+                                {record.signInLat && record.signOutLat && <span>|</span>}
+                                {record.signOutLat && (
+                                  <span>Out: {record.signOutLat.toFixed(4)}, {record.signOutLng?.toFixed(4)}</span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

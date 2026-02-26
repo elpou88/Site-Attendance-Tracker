@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -16,10 +16,127 @@ import {
   Clock,
   FileText,
   ImageIcon,
+  Navigation,
+  RefreshCw,
+  MapPinOff,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import type { Attendance, FeedEntry } from "@shared/schema";
 import { format } from "date-fns";
 import resolveLogoPath from "@assets/Resolve_Construction_Ltd._Logo_1772117575893.jpg";
+
+type GpsStatus = "idle" | "loading" | "success" | "denied" | "unavailable" | "error";
+
+function useGpsLocation() {
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [status, setStatus] = useState<GpsStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const requestLocation = useCallback((): Promise<{ lat: number; lng: number } | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        setStatus("unavailable");
+        setErrorMessage("GPS is not supported on this device");
+        resolve(null);
+        return;
+      }
+
+      setStatus("loading");
+      setErrorMessage(null);
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setLocation(loc);
+          setStatus("success");
+          setErrorMessage(null);
+          resolve(loc);
+        },
+        (err) => {
+          setLocation(null);
+          switch (err.code) {
+            case err.PERMISSION_DENIED:
+              setStatus("denied");
+              setErrorMessage("Location access denied. Please enable GPS in your browser settings.");
+              break;
+            case err.POSITION_UNAVAILABLE:
+              setStatus("unavailable");
+              setErrorMessage("GPS signal unavailable. Please try again outside or in a different location.");
+              break;
+            case err.TIMEOUT:
+              setStatus("error");
+              setErrorMessage("Location request timed out. Please try again.");
+              break;
+            default:
+              setStatus("error");
+              setErrorMessage("Unable to get location. Please try again.");
+          }
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      );
+    });
+  }, []);
+
+  return { location, status, errorMessage, requestLocation };
+}
+
+function GpsStatusDisplay({
+  status,
+  errorMessage,
+  location,
+}: {
+  status: GpsStatus;
+  errorMessage: string | null;
+  location: { lat: number; lng: number } | null;
+}) {
+  if (status === "loading") {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="gps-loading">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        <span>Getting your location...</span>
+      </div>
+    );
+  }
+
+  if (status === "denied" || status === "unavailable" || status === "error") {
+    return (
+      <div className="flex items-center gap-2 text-sm text-destructive" data-testid="gps-error">
+        <MapPinOff className="w-3.5 h-3.5 shrink-0" />
+        <span>{errorMessage}</span>
+      </div>
+    );
+  }
+
+  if (status === "success" && location) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="gps-success">
+        <MapPin className="w-3.5 h-3.5 text-green-600 shrink-0" />
+        <span>
+          Location: {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
+        </span>
+        <a
+          href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-primary hover:underline"
+          data-testid="link-view-map"
+        >
+          <ExternalLink className="w-3 h-3" />
+          Map
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="gps-idle">
+      <Navigation className="w-3.5 h-3.5" />
+      <span>GPS location will be captured when you sign in</span>
+    </div>
+  );
+}
 
 export default function WorkerDashboard() {
   const { user, logout } = useAuth();
@@ -27,6 +144,7 @@ export default function WorkerDashboard() {
   const [note, setNote] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const gps = useGpsLocation();
 
   const { data: attendanceStatus } = useQuery<{
     signedIn: boolean;
@@ -40,32 +158,30 @@ export default function WorkerDashboard() {
     queryKey: ["/api/feed/mine"],
   });
 
-  const getLocation = (): Promise<{ lat: number; lng: number } | null> => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve(null);
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => resolve(null),
-        { timeout: 10000 }
-      );
-    });
-  };
+  useEffect(() => {
+    gps.requestLocation();
+  }, []);
 
   const signInMutation = useMutation({
     mutationFn: async () => {
-      const location = await getLocation();
+      let loc = gps.location;
+      if (!loc) {
+        loc = await gps.requestLocation();
+      }
       const res = await apiRequest("POST", "/api/attendance/sign-in", {
-        lat: location?.lat,
-        lng: location?.lng,
+        lat: loc?.lat ?? null,
+        lng: loc?.lng ?? null,
       });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
-      toast({ title: "Signed In", description: "You have been signed in for today." });
+      toast({
+        title: "Signed In",
+        description: gps.location
+          ? "You have been signed in with your GPS location."
+          : "You have been signed in (GPS location unavailable).",
+      });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -74,16 +190,42 @@ export default function WorkerDashboard() {
 
   const signOutMutation = useMutation({
     mutationFn: async () => {
-      const location = await getLocation();
+      const loc = await gps.requestLocation();
       const res = await apiRequest("POST", "/api/attendance/sign-out", {
-        lat: location?.lat,
-        lng: location?.lng,
+        lat: loc?.lat ?? null,
+        lng: loc?.lng ?? null,
       });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
-      toast({ title: "Signed Out", description: "You have been signed out. Have a good evening!" });
+      toast({
+        title: "Signed Out",
+        description: gps.location
+          ? "You have been signed out with your GPS location recorded."
+          : "You have been signed out (GPS location unavailable).",
+      });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const updateLocationMutation = useMutation({
+    mutationFn: async () => {
+      const loc = await gps.requestLocation();
+      if (!loc) {
+        throw new Error("Unable to get GPS location");
+      }
+      const res = await apiRequest("POST", "/api/attendance/update-location", {
+        lat: loc.lat,
+        lng: loc.lng,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
+      toast({ title: "Location Updated", description: "Your GPS location has been updated." });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -124,6 +266,7 @@ export default function WorkerDashboard() {
   };
 
   const isSignedIn = attendanceStatus?.signedIn;
+  const activeAttendance = attendanceStatus?.attendance;
 
   return (
     <div className="min-h-screen bg-background">
@@ -154,6 +297,38 @@ export default function WorkerDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
+                <Navigation className="w-4 h-4 text-muted-foreground" />
+                <h2 className="font-semibold">Your Location</h2>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => gps.requestLocation()}
+                disabled={gps.status === "loading"}
+                data-testid="button-refresh-gps"
+              >
+                {gps.status === "loading" ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                )}
+                {gps.status === "loading" ? "Getting..." : "Refresh GPS"}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <GpsStatusDisplay
+              status={gps.status}
+              errorMessage={gps.errorMessage}
+              location={gps.location}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
                 <h2 className="font-semibold">Attendance</h2>
               </div>
@@ -163,21 +338,61 @@ export default function WorkerDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {isSignedIn && attendanceStatus?.attendance && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>
-                  Signed in at{" "}
-                  {format(new Date(attendanceStatus.attendance.signInTime), "h:mm a")}
-                </span>
-                {attendanceStatus.attendance.signInLat && (
-                  <span className="text-xs">
-                    ({attendanceStatus.attendance.signInLat.toFixed(4)},{" "}
-                    {attendanceStatus.attendance.signInLng?.toFixed(4)})
+            {isSignedIn && activeAttendance && (
+              <div className="rounded-md bg-muted/50 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <span>
+                    Signed in at{" "}
+                    <span className="font-medium">
+                      {format(new Date(activeAttendance.signInTime), "h:mm a")}
+                    </span>
                   </span>
+                </div>
+
+                {activeAttendance.signInLat ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                    <span>
+                      Recorded at: {activeAttendance.signInLat.toFixed(5)},{" "}
+                      {activeAttendance.signInLng?.toFixed(5)}
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps?q=${activeAttendance.signInLat},${activeAttendance.signInLng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
+                      data-testid="link-signin-map"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      View on Map
+                    </a>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPinOff className="w-3.5 h-3.5 shrink-0" />
+                    <span>No GPS location recorded at sign-in</span>
+                  </div>
                 )}
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-1"
+                  onClick={() => updateLocationMutation.mutate()}
+                  disabled={updateLocationMutation.isPending || gps.status === "denied"}
+                  data-testid="button-update-location"
+                >
+                  {updateLocationMutation.isPending ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                  )}
+                  {updateLocationMutation.isPending ? "Updating..." : "Update My Location"}
+                </Button>
               </div>
             )}
+
             <div className="flex gap-3">
               <Button
                 className="flex-1"
@@ -185,8 +400,17 @@ export default function WorkerDashboard() {
                 onClick={() => signInMutation.mutate()}
                 data-testid="button-sign-in"
               >
-                <LogIn className="w-4 h-4 mr-2" />
-                {signInMutation.isPending ? "Signing In..." : "Sign In"}
+                {signInMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Getting GPS & Signing In...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </>
+                )}
               </Button>
               <Button
                 variant="secondary"
@@ -195,8 +419,17 @@ export default function WorkerDashboard() {
                 onClick={() => signOutMutation.mutate()}
                 data-testid="button-sign-out"
               >
-                <LogOut className="w-4 h-4 mr-2" />
-                {signOutMutation.isPending ? "Signing Out..." : "Sign Out"}
+                {signOutMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Getting GPS & Signing Out...
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

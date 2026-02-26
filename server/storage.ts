@@ -29,6 +29,7 @@ export interface IStorage {
 
   signIn(userId: string, lat?: number, lng?: number): Promise<Attendance>;
   signOut(attendanceId: string, lat?: number, lng?: number): Promise<Attendance | undefined>;
+  updateAttendanceLocation(attendanceId: string, lat: number, lng: number): Promise<Attendance | undefined>;
   getActiveAttendance(userId: string): Promise<Attendance | undefined>;
   getAttendanceByDate(date: string): Promise<(Attendance & { user?: User })[]>;
   getAttendanceByUser(userId: string): Promise<Attendance[]>;
@@ -89,6 +90,18 @@ export class DatabaseStorage implements IStorage {
         signOutTime: new Date(),
         signOutLat: lat ?? null,
         signOutLng: lng ?? null,
+      })
+      .where(eq(attendance.id, attendanceId))
+      .returning();
+    return record;
+  }
+
+  async updateAttendanceLocation(attendanceId: string, lat: number, lng: number): Promise<Attendance | undefined> {
+    const [record] = await db
+      .update(attendance)
+      .set({
+        signInLat: lat,
+        signInLng: lng,
       })
       .where(eq(attendance.id, attendanceId))
       .returning();
