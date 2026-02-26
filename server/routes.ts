@@ -87,7 +87,7 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid credentials" });
       }
-      const user = await storage.getUserByUsername(parsed.data.username);
+      const user = await storage.getUserByUsername(parsed.data.username.trim());
       if (!user) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
@@ -157,6 +157,8 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid worker data" });
       }
+      parsed.data.username = parsed.data.username.trim();
+      parsed.data.fullName = parsed.data.fullName.trim();
       const existing = await storage.getUserByUsername(parsed.data.username);
       if (existing) {
         return res.status(400).json({ message: "Username already exists" });
