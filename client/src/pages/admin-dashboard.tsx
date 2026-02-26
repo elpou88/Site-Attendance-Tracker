@@ -15,6 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users,
@@ -28,12 +35,190 @@ import {
   Trash2,
   Eye,
   Copy,
+  Briefcase,
+  Calendar,
+  HeartPulse,
+  Palmtree,
+  Save,
+  AlertTriangle,
 } from "lucide-react";
 import type { Attendance, FeedEntry, User } from "@shared/schema";
-import { format } from "date-fns";
+import { format, differenceInDays, parseISO } from "date-fns";
 import resolveLogoPath from "@assets/Resolve_Construction_Ltd._Logo_1772117575893.jpg";
 
 type SafeUser = Omit<User, "password">;
+
+function ContractDialog({ worker }: { worker: SafeUser }) {
+  const { toast } = useToast();
+  const [contractType, setContractType] = useState(worker.contractType || "");
+  const [contractStartDate, setContractStartDate] = useState(worker.contractStartDate || "");
+  const [contractExpiryDate, setContractExpiryDate] = useState(worker.contractExpiryDate || "");
+  const [sickDaysTotal, setSickDaysTotal] = useState(worker.sickDaysTotal?.toString() || "0");
+  const [sickDaysUsed, setSickDaysUsed] = useState(worker.sickDaysUsed?.toString() || "0");
+  const [holidayDaysTotal, setHolidayDaysTotal] = useState(worker.holidayDaysTotal?.toString() || "0");
+  const [holidayDaysUsed, setHolidayDaysUsed] = useState(worker.holidayDaysUsed?.toString() || "0");
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PATCH", `/api/workers/${worker.id}/contract`, {
+        contractType: contractType || null,
+        contractStartDate: contractStartDate || null,
+        contractExpiryDate: contractExpiryDate || null,
+        sickDaysTotal: parseInt(sickDaysTotal) || 0,
+        sickDaysUsed: parseInt(sickDaysUsed) || 0,
+        holidayDaysTotal: parseInt(holidayDaysTotal) || 0,
+        holidayDaysUsed: parseInt(holidayDaysUsed) || 0,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
+      toast({ title: "Contract Updated", description: `Contract details for ${worker.fullName} have been saved.` });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const sickDaysLeft = Math.max(0, (parseInt(sickDaysTotal) || 0) - (parseInt(sickDaysUsed) || 0));
+  const holidayDaysLeft = Math.max(0, (parseInt(holidayDaysTotal) || 0) - (parseInt(holidayDaysUsed) || 0));
+  const contractDaysLeft = contractExpiryDate
+    ? differenceInDays(parseISO(contractExpiryDate), new Date())
+    : null;
+  const contractExpiring = contractDaysLeft !== null && contractDaysLeft <= 30 && contractDaysLeft >= 0;
+  const contractExpired = contractDaysLeft !== null && contractDaysLeft < 0;
+
+  return (
+    <div className="space-y-5 pt-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-muted/50 rounded-md p-3 text-center">
+          <HeartPulse className="w-4 h-4 mx-auto text-red-500 mb-1" />
+          <p className="text-lg font-bold" data-testid={`text-sick-left-${worker.id}`}>{sickDaysLeft}</p>
+          <p className="text-xs text-muted-foreground">Sick Days Left</p>
+        </div>
+        <div className="bg-muted/50 rounded-md p-3 text-center">
+          <Palmtree className="w-4 h-4 mx-auto text-green-600 mb-1" />
+          <p className="text-lg font-bold" data-testid={`text-holiday-left-${worker.id}`}>{holidayDaysLeft}</p>
+          <p className="text-xs text-muted-foreground">Holiday Days Left</p>
+        </div>
+      </div>
+
+      {contractDaysLeft !== null && (
+        <div className={`rounded-md p-3 flex items-center gap-2 text-sm ${contractExpired ? "bg-red-50 text-red-700 border border-red-200" : contractExpiring ? "bg-orange-50 text-orange-700 border border-orange-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
+          {contractExpired ? (
+            <>
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>Contract expired {Math.abs(contractDaysLeft)} days ago</span>
+            </>
+          ) : contractExpiring ? (
+            <>
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>Contract expires in {contractDaysLeft} days</span>
+            </>
+          ) : (
+            <>
+              <Calendar className="w-4 h-4 shrink-0" />
+              <span>{contractDaysLeft} days remaining on contract</span>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label>Contract Type</Label>
+        <Select value={contractType} onValueChange={setContractType}>
+          <SelectTrigger data-testid={`select-contract-type-${worker.id}`}>
+            <SelectValue placeholder="Select contract type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="full-time">Full-Time</SelectItem>
+            <SelectItem value="part-time">Part-Time</SelectItem>
+            <SelectItem value="temporary">Temporary</SelectItem>
+            <SelectItem value="contract">Contract</SelectItem>
+            <SelectItem value="apprentice">Apprentice</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Contract Start Date</Label>
+          <Input
+            type="date"
+            value={contractStartDate}
+            onChange={(e) => setContractStartDate(e.target.value)}
+            data-testid={`input-contract-start-${worker.id}`}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Contract Expiry Date</Label>
+          <Input
+            type="date"
+            value={contractExpiryDate}
+            onChange={(e) => setContractExpiryDate(e.target.value)}
+            data-testid={`input-contract-expiry-${worker.id}`}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Total Sick Days</Label>
+          <Input
+            type="number"
+            min="0"
+            value={sickDaysTotal}
+            onChange={(e) => setSickDaysTotal(e.target.value)}
+            data-testid={`input-sick-total-${worker.id}`}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Sick Days Used</Label>
+          <Input
+            type="number"
+            min="0"
+            value={sickDaysUsed}
+            onChange={(e) => setSickDaysUsed(e.target.value)}
+            data-testid={`input-sick-used-${worker.id}`}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Total Holiday Days</Label>
+          <Input
+            type="number"
+            min="0"
+            value={holidayDaysTotal}
+            onChange={(e) => setHolidayDaysTotal(e.target.value)}
+            data-testid={`input-holiday-total-${worker.id}`}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Holiday Days Used</Label>
+          <Input
+            type="number"
+            min="0"
+            value={holidayDaysUsed}
+            onChange={(e) => setHolidayDaysUsed(e.target.value)}
+            data-testid={`input-holiday-used-${worker.id}`}
+          />
+        </div>
+      </div>
+
+      <Button
+        className="w-full"
+        onClick={() => updateMutation.mutate()}
+        disabled={updateMutation.isPending}
+        data-testid={`button-save-contract-${worker.id}`}
+      >
+        <Save className="w-4 h-4 mr-1" />
+        {updateMutation.isPending ? "Saving..." : "Save Contract Details"}
+      </Button>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const { adminLogout } = useAdmin();
@@ -103,6 +288,18 @@ export default function AdminDashboard() {
     const text = `Username: ${username}\nPassword: ${password}`;
     navigator.clipboard.writeText(text);
     toast({ title: "Copied", description: "Credentials copied to clipboard" });
+  };
+
+  const getContractBadge = (worker: SafeUser) => {
+    if (!worker.contractExpiryDate) return null;
+    const daysLeft = differenceInDays(parseISO(worker.contractExpiryDate), new Date());
+    if (daysLeft < 0) {
+      return <Badge variant="destructive" className="text-xs">Expired</Badge>;
+    }
+    if (daysLeft <= 30) {
+      return <Badge className="text-xs bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>;
+    }
+    return null;
   };
 
   return (
@@ -422,9 +619,11 @@ export default function AdminDashboard() {
               const isActiveToday = todayAttendance.some(
                 (a) => a.userId === worker.id && !a.signOutTime
               );
+              const sickLeft = Math.max(0, (worker.sickDaysTotal || 0) - (worker.sickDaysUsed || 0));
+              const holidayLeft = Math.max(0, (worker.holidayDaysTotal || 0) - (worker.holidayDaysUsed || 0));
               return (
                 <Card key={worker.id}>
-                  <CardContent className="pt-4">
+                  <CardContent className="pt-4 space-y-3">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center">
@@ -433,101 +632,153 @@ export default function AdminDashboard() {
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-sm" data-testid={`text-worker-${worker.id}`}>
-                            {worker.fullName}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm" data-testid={`text-worker-${worker.id}`}>
+                              {worker.fullName}
+                            </p>
+                            {getContractBadge(worker)}
+                          </div>
                           <p className="text-xs text-muted-foreground">@{worker.username}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant={isActiveToday ? "default" : "secondary"}>
                           {isActiveToday ? "On Site" : "Off Site"}
                         </Badge>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => setSelectedWorkerId(worker.id)}
-                              data-testid={`button-view-history-${worker.id}`}
-                            >
-                              <Eye className="w-3.5 h-3.5 mr-1" />
-                              History
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>{worker.fullName} - Attendance History</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-2 pt-2">
-                              {workerAttendance.length === 0 ? (
-                                <p className="text-sm text-muted-foreground text-center py-4">
-                                  No attendance records yet.
-                                </p>
-                              ) : (
-                                workerAttendance.map((record) => (
-                                  <div
-                                    key={record.id}
-                                    className="flex items-center justify-between gap-2 py-2 border-b last:border-0"
-                                  >
-                                    <div>
-                                      <p className="text-sm font-medium">{record.date}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {format(new Date(record.signInTime), "h:mm a")}
-                                        {record.signOutTime &&
-                                          ` - ${format(new Date(record.signOutTime), "h:mm a")}`}
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {record.signInLat && (
-                                        <a
-                                          href={`https://www.google.com/maps?q=${record.signInLat},${record.signInLng}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          title="Sign-in location"
-                                        >
-                                          <Button variant="secondary" size="sm">
-                                            <MapPin className="w-3 h-3 mr-1" />
-                                            In
-                                          </Button>
-                                        </a>
-                                      )}
-                                      {record.signOutLat && (
-                                        <a
-                                          href={`https://www.google.com/maps?q=${record.signOutLat},${record.signOutLng}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          title="Sign-out location"
-                                        >
-                                          <Button variant="secondary" size="sm">
-                                            <MapPin className="w-3 h-3 mr-1" />
-                                            Out
-                                          </Button>
-                                        </a>
-                                      )}
-                                      <Badge variant={record.signOutTime ? "secondary" : "default"}>
-                                        {record.signOutTime ? "Completed" : "Active"}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm(`Remove ${worker.fullName}?`)) {
-                              deleteWorkerMutation.mutate(worker.id);
-                            }
-                          }}
-                          data-testid={`button-delete-worker-${worker.id}`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        {worker.contractType && (
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {worker.contractType}
+                          </Badge>
+                        )}
                       </div>
+                    </div>
+
+                    {(worker.contractType || worker.sickDaysTotal || worker.holidayDaysTotal) && (
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground border-t pt-2">
+                        {worker.sickDaysTotal !== null && worker.sickDaysTotal !== undefined && worker.sickDaysTotal > 0 && (
+                          <span className="flex items-center gap-1">
+                            <HeartPulse className="w-3 h-3 text-red-500" />
+                            Sick: {sickLeft}/{worker.sickDaysTotal}
+                          </span>
+                        )}
+                        {worker.holidayDaysTotal !== null && worker.holidayDaysTotal !== undefined && worker.holidayDaysTotal > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Palmtree className="w-3 h-3 text-green-600" />
+                            Holiday: {holidayLeft}/{worker.holidayDaysTotal}
+                          </span>
+                        )}
+                        {worker.contractExpiryDate && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Expires: {format(parseISO(worker.contractExpiryDate), "dd MMM yyyy")}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 border-t pt-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            data-testid={`button-contract-${worker.id}`}
+                          >
+                            <Briefcase className="w-3.5 h-3.5 mr-1" />
+                            Contract
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-h-[85vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>{worker.fullName} - Contract Details</DialogTitle>
+                          </DialogHeader>
+                          <ContractDialog worker={worker} />
+                        </DialogContent>
+                      </Dialog>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setSelectedWorkerId(worker.id)}
+                            data-testid={`button-view-history-${worker.id}`}
+                          >
+                            <Eye className="w-3.5 h-3.5 mr-1" />
+                            History
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>{worker.fullName} - Attendance History</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-2 pt-2">
+                            {workerAttendance.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-4">
+                                No attendance records yet.
+                              </p>
+                            ) : (
+                              workerAttendance.map((record) => (
+                                <div
+                                  key={record.id}
+                                  className="flex items-center justify-between gap-2 py-2 border-b last:border-0"
+                                >
+                                  <div>
+                                    <p className="text-sm font-medium">{record.date}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {format(new Date(record.signInTime), "h:mm a")}
+                                      {record.signOutTime &&
+                                        ` - ${format(new Date(record.signOutTime), "h:mm a")}`}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {record.signInLat && (
+                                      <a
+                                        href={`https://www.google.com/maps?q=${record.signInLat},${record.signInLng}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Sign-in location"
+                                      >
+                                        <Button variant="secondary" size="sm">
+                                          <MapPin className="w-3 h-3 mr-1" />
+                                          In
+                                        </Button>
+                                      </a>
+                                    )}
+                                    {record.signOutLat && (
+                                      <a
+                                        href={`https://www.google.com/maps?q=${record.signOutLat},${record.signOutLng}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Sign-out location"
+                                      >
+                                        <Button variant="secondary" size="sm">
+                                          <MapPin className="w-3 h-3 mr-1" />
+                                          Out
+                                        </Button>
+                                      </a>
+                                    )}
+                                    <Badge variant={record.signOutTime ? "secondary" : "default"}>
+                                      {record.signOutTime ? "Completed" : "Active"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={() => {
+                          if (confirm(`Remove ${worker.fullName}?`)) {
+                            deleteWorkerMutation.mutate(worker.id);
+                          }
+                        }}
+                        data-testid={`button-delete-worker-${worker.id}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

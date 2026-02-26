@@ -1,6 +1,7 @@
 import {
   type User,
   type InsertUser,
+  type UpdateContract,
   type Attendance,
   type InsertAttendance,
   type FeedEntry,
@@ -25,6 +26,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllWorkers(): Promise<User[]>;
   updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined>;
+  updateContract(id: string, data: UpdateContract): Promise<User | undefined>;
   deleteUser(id: string): Promise<void>;
 
   signIn(userId: string, lat?: number, lng?: number): Promise<Attendance>;
@@ -60,6 +62,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    return user;
+  }
+
+  async updateContract(id: string, data: UpdateContract): Promise<User | undefined> {
     const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
     return user;
   }

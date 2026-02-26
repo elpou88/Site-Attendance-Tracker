@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, doublePrecision, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, doublePrecision, date, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -10,6 +10,13 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   role: text("role").notNull().default("worker"),
   active: boolean("active").notNull().default(true),
+  contractType: text("contract_type"),
+  contractStartDate: date("contract_start_date"),
+  contractExpiryDate: date("contract_expiry_date"),
+  sickDaysTotal: integer("sick_days_total").default(0),
+  sickDaysUsed: integer("sick_days_used").default(0),
+  holidayDaysTotal: integer("holiday_days_total").default(0),
+  holidayDaysUsed: integer("holiday_days_used").default(0),
 });
 
 export const attendance = pgTable("attendance", {
@@ -39,6 +46,16 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
 });
 
+export const updateContractSchema = z.object({
+  contractType: z.string().nullable().optional(),
+  contractStartDate: z.string().nullable().optional(),
+  contractExpiryDate: z.string().nullable().optional(),
+  sickDaysTotal: z.number().int().min(0).nullable().optional(),
+  sickDaysUsed: z.number().int().min(0).nullable().optional(),
+  holidayDaysTotal: z.number().int().min(0).nullable().optional(),
+  holidayDaysUsed: z.number().int().min(0).nullable().optional(),
+});
+
 export const insertAttendanceSchema = createInsertSchema(attendance).pick({
   userId: true,
   date: true,
@@ -59,6 +76,7 @@ export const loginSchema = z.object({
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateContract = z.infer<typeof updateContractSchema>;
 export type User = typeof users.$inferSelect;
 export type Attendance = typeof attendance.$inferSelect;
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;

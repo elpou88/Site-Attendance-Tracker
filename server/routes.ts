@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
-import { loginSchema, insertUserSchema } from "@shared/schema";
+import { loginSchema, insertUserSchema, updateContractSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -178,6 +178,21 @@ export async function registerRoutes(
       return res.json(safeWorker);
     } catch (error) {
       return res.status(500).json({ message: "Failed to update worker" });
+    }
+  });
+
+  app.patch("/api/workers/:id/contract", requireAdmin, async (req, res) => {
+    try {
+      const parsed = updateContractSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid contract data" });
+      }
+      const worker = await storage.updateContract(req.params.id, parsed.data);
+      if (!worker) return res.status(404).json({ message: "Worker not found" });
+      const { password, ...safeWorker } = worker;
+      return res.json(safeWorker);
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to update contract" });
     }
   });
 
