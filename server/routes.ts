@@ -9,7 +9,7 @@ import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
 
-const uploadDir = path.join(process.cwd(), "client", "public", "uploads");
+const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -35,6 +35,9 @@ export async function registerRoutes(
   if (process.env.NODE_ENV === "production") {
     app.set("trust proxy", 1);
   }
+
+  const express = await import("express");
+  app.use("/uploads", express.default.static(uploadDir));
 
   app.use(
     session({
