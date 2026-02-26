@@ -303,5 +303,35 @@ export async function registerRoutes(
     res.json(safeEntries);
   });
 
+  app.get("/api/chat", requireAuth, async (_req, res) => {
+    const messages = await storage.getChatMessages(100);
+    const safeMessages = messages.map((m) => {
+      if (m.user) {
+        const { password, ...safeUser } = m.user;
+        return { ...m, user: safeUser };
+      }
+      return m;
+    });
+    res.json(safeMessages);
+  });
+
+  app.post("/api/chat", requireAuth, async (req: any, res) => {
+    try {
+      const message = req.body.message?.trim();
+      if (!message) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      const chatMsg = await storage.createChatMessage({
+        userId: req.user.id,
+        message,
+      });
+      const user = await storage.getUser(req.user.id);
+      const { password, ...safeUser } = user!;
+      return res.json({ ...chatMsg, user: safeUser });
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
   return httpServer;
 }

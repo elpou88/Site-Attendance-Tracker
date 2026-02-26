@@ -6,9 +6,12 @@ import {
   type InsertAttendance,
   type FeedEntry,
   type InsertFeedEntry,
+  type ChatMessage,
+  type InsertChatMessage,
   users,
   attendance,
   feedEntries,
+  chatMessages,
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, desc, isNull } from "drizzle-orm";
@@ -39,6 +42,9 @@ export interface IStorage {
   createFeedEntry(entry: InsertFeedEntry): Promise<FeedEntry>;
   getFeedEntriesByUser(userId: string): Promise<FeedEntry[]>;
   getAllFeedEntries(): Promise<(FeedEntry & { user?: User })[]>;
+
+  createChatMessage(msg: InsertChatMessage): Promise<ChatMessage>;
+  getChatMessages(limit?: number): Promise<(ChatMessage & { user?: User })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -173,6 +179,27 @@ export class DatabaseStorage implements IStorage {
       })
     );
     return enriched;
+  }
+
+  async createChatMessage(msg: InsertChatMessage): Promise<ChatMessage> {
+    const [chatMsg] = await db.insert(chatMessages).values(msg).returning();
+    return chatMsg;
+  }
+
+  async getChatMessages(limit = 100): Promise<(ChatMessage & { user?: User })[]> {
+    const messages = await db
+      .select()
+      .from(chatMessages)
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(limit);
+
+    const enriched = await Promise.all(
+      messages.map(async (m) => {
+        const user = await this.getUser(m.userId);
+        return { ...m, user };
+      })
+    );
+    return enriched.reverse();
   }
 }
 

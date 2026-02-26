@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -21,8 +22,9 @@ import {
   MapPinOff,
   ExternalLink,
   Loader2,
+  MessageCircle,
 } from "lucide-react";
-import type { Attendance, FeedEntry } from "@shared/schema";
+import type { Attendance, FeedEntry, ChatMessage, User } from "@shared/schema";
 import { format } from "date-fns";
 import resolveLogoPath from "@assets/Resolve_Construction_Ltd._Logo_1772117575893.jpg";
 
@@ -157,6 +159,36 @@ export default function WorkerDashboard() {
   const { data: feedEntries = [] } = useQuery<FeedEntry[]>({
     queryKey: ["/api/feed/mine"],
   });
+
+  type ChatMessageWithUser = ChatMessage & { user?: Omit<User, "password"> };
+  const { data: chatMessages = [] } = useQuery<ChatMessageWithUser[]>({
+    queryKey: ["/api/chat"],
+    refetchInterval: 5000,
+  });
+
+  const [chatInput, setChatInput] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const chatMutation = useMutation({
+    mutationFn: async (message: string) => {
+      const res = await apiRequest("POST", "/api/chat", { message });
+      return res.json();
+    },
+    onSuccess: () => {
+      setChatInput("");
+      queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages]);
 
   useEffect(() => {
     gps.requestLocation();
@@ -432,6 +464,81 @@ export default function WorkerDashboard() {
                 )}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-muted-foreground" />
+                <h2 className="font-semibold">Team Chat</h2>
+              </div>
+              <Badge variant="secondary" data-testid="badge-chat-count">
+                {chatMessages.length} messages
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div
+              ref={chatContainerRef}
+              className="h-72 overflow-y-auto border rounded-md p-3 space-y-3 bg-muted/20"
+              data-testid="chat-messages-container"
+            >
+              {chatMessages.length === 0 && (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
+                </div>
+              )}
+              {chatMessages.map((msg) => {
+                const isMe = msg.userId === user?.id;
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                    data-testid={`chat-message-${msg.id}`}
+                  >
+                    <div className={`max-w-[80%] rounded-lg px-3 py-2 ${isMe ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                      {!isMe && (
+                        <p className="text-xs font-semibold mb-0.5" data-testid={`chat-sender-${msg.id}`}>
+                          {msg.user?.fullName || "Unknown"}
+                        </p>
+                      )}
+                      <p className="text-sm" data-testid={`chat-text-${msg.id}`}>{msg.message}</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
+                      {format(new Date(msg.createdAt), "h:mm a")}
+                    </span>
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (chatInput.trim()) {
+                  chatMutation.mutate(chatInput.trim());
+                }
+              }}
+              className="flex gap-2"
+            >
+              <Input
+                placeholder="Type a message..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                disabled={chatMutation.isPending}
+                data-testid="input-chat-message"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!chatInput.trim() || chatMutation.isPending}
+                data-testid="button-send-chat"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </form>
           </CardContent>
         </Card>
 

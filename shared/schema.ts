@@ -39,6 +39,13 @@ export const feedEntries = pgTable("feed_entries", {
   createdAt: timestamp("created_at").notNull().default(sql`NOW()`),
 });
 
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`NOW()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -70,6 +77,11 @@ export const insertFeedEntrySchema = createInsertSchema(feedEntries).pick({
   imageUrl: true,
 });
 
+export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
+  userId: true,
+  message: true,
+});
+
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -82,3 +94,5 @@ export type Attendance = typeof attendance.$inferSelect;
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 export type FeedEntry = typeof feedEntries.$inferSelect;
 export type InsertFeedEntry = z.infer<typeof insertFeedEntrySchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;

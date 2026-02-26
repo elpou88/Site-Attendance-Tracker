@@ -14,13 +14,14 @@ A construction site worker management app for Resolve Construction Ltd where:
 - **Auth**: Session-based (express-session + connect-pg-simple)
   - Admin: separate password-based authentication (hardcoded password, no database user)
   - Workers: username/password from database (bcrypt hashed)
-- **File Uploads**: Multer (saved to client/public/uploads)
+- **File Uploads**: Multer (saved to uploads/ directory, served via Express static)
 - **Branding**: Orange primary color (hsl 24 89% 48%), Resolve Construction Ltd logo
 
 ## Data Model
 - `users` - id, username, password, fullName, role (worker), active, contractType, contractStartDate, contractExpiryDate, sickDaysTotal, sickDaysUsed, holidayDaysTotal, holidayDaysUsed
 - `attendance` - id, userId, date, signInTime, signOutTime, GPS coordinates (in/out)
 - `feed_entries` - id, userId, note, imageUrl, createdAt
+- `chat_messages` - id, userId, message, createdAt
 
 ## Access
 - Admin: navigate to `/admin`, enter password `123resolve2026`
@@ -34,7 +35,7 @@ A construction site worker management app for Resolve Construction Ltd where:
 - `client/src/lib/auth.tsx` - Auth context (AuthProvider for workers, AdminProvider for admin)
 - `client/src/pages/login.tsx` - Worker login page
 - `client/src/pages/admin-login.tsx` - Admin login page
-- `client/src/pages/worker-dashboard.tsx` - Worker view (attendance, GPS, daily updates)
+- `client/src/pages/worker-dashboard.tsx` - Worker view (attendance, GPS, team chat, daily updates)
 - `client/src/pages/admin-dashboard.tsx` - Admin panel (workers, contracts, attendance, feed)
 - `client/src/App.tsx` - Routing (/ = worker, /admin = admin)
 
@@ -45,3 +46,9 @@ A construction site worker management app for Resolve Construction Ltd where:
 - Holiday days: total allocated and used (shows remaining)
 - Visual alerts: expired contracts (red), expiring soon within 30 days (orange)
 - API: PATCH /api/workers/:id/contract
+
+## Team Chat (Workers)
+- Group chat visible to all logged-in workers
+- Real-time polling (5-second refresh interval)
+- Messages display sender name (other workers) or right-aligned (own messages)
+- API: GET /api/chat, POST /api/chat
