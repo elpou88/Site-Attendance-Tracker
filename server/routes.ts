@@ -32,6 +32,10 @@ export async function registerRoutes(
 ): Promise<Server> {
   const PgStore = ConnectPgSimple(session);
 
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+
   app.use(
     session({
       store: new PgStore({
@@ -41,7 +45,13 @@ export async function registerRoutes(
       secret: process.env.SESSION_SECRET || "resolve-construction-secret",
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 },
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000,
+      },
+      proxy: process.env.NODE_ENV === "production",
     })
   );
 
@@ -81,7 +91,16 @@ export async function registerRoutes(
       if (!user) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
-      const validPassword = await bcrypt.compare(parsed.data.password, user.password);
+      let validPassword = false;
+      if (user.password.startsWith("$2b$") || user.password.startsWith("$2a$")) {
+        validPassword = await bcrypt.compare(parsed.data.password, user.password);
+      } else {
+        validPassword = user.password === parsed.data.password;
+        if (validPassword) {
+          const hashed = await bcrypt.hash(parsed.data.password, 10);
+          await storage.updateUser(user.id, { password: hashed });
+        }
+      }
       if (!validPassword) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
