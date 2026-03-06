@@ -828,6 +828,7 @@ export default function AdminDashboard() {
                       alt="Work update"
                       className="w-full rounded-md object-cover max-h-64"
                       data-testid={`img-admin-feed-${entry.id}`}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   )}
                 </CardContent>
