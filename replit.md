@@ -25,7 +25,7 @@ A construction site worker management app for Resolve Construction Ltd where:
 
 ## Access
 - Admin: navigate to `/admin`, enter password `123resolve2026`
-- Sample workers: `john.mason`, `maria.silva`, `tom.builder` (all password `worker123`)
+- Workers are created by admin via the Workers tab (no seed/demo workers)
 
 ## Structure
 - `shared/schema.ts` - Drizzle schema + Zod validation (includes updateContractSchema)

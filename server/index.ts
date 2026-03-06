@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { seedDatabase } from "./seed";
 
 const app = express();
 const httpServer = createServer(app);
@@ -62,8 +61,6 @@ app.use((req, res, next) => {
 
 (async () => {
   await registerRoutes(httpServer, app);
-  await seedDatabase();
-
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
