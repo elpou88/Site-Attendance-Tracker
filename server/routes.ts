@@ -32,9 +32,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   const PgStore = ConnectPgSimple(session);
 
-  if (process.env.NODE_ENV === "production") {
-    app.set("trust proxy", 1);
-  }
+  app.set("trust proxy", 1);
 
   const express = await import("express");
   app.use("/uploads", express.default.static(uploadDir));

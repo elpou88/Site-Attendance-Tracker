@@ -31,7 +31,6 @@ A construction site worker management app for Resolve Construction Ltd where:
 - `shared/schema.ts` - Drizzle schema + Zod validation (includes updateContractSchema)
 - `server/routes.ts` - API endpoints with auth middleware (admin + worker)
 - `server/storage.ts` - Database CRUD operations (includes updateContract)
-- `server/seed.ts` - Seed data for workers
 - `client/src/lib/auth.tsx` - Auth context (AuthProvider for workers, AdminProvider for admin)
 - `client/src/pages/login.tsx` - Worker login page
 - `client/src/pages/admin-login.tsx` - Admin login page
@@ -52,3 +51,18 @@ A construction site worker management app for Resolve Construction Ltd where:
 - Real-time polling (5-second refresh interval)
 - Messages display sender name (other workers) or right-aligned (own messages)
 - API: GET /api/chat, POST /api/chat
+
+## Railway Deployment
+- **Config file**: `railway.json` (build + start commands, health check)
+- **Build**: `npm install && npm run build && npx drizzle-kit push --force`
+- **Start**: `NODE_ENV=production node dist/index.cjs`
+- **Required env vars in Railway**:
+  - `DATABASE_URL` - PostgreSQL connection string (Railway provides this with PostgreSQL addon)
+  - `SESSION_SECRET` - Random secret string for session encryption
+  - `PORT` - Set automatically by Railway
+  - `NODE_ENV` - Set to `production`
+- **See also**: `.env.example` for all required variables
+- **Notes**: 
+  - Vite config gracefully handles missing Replit-specific plugins
+  - `trust proxy` always enabled for reverse proxy compatibility
+  - `drizzle-kit push --force` auto-creates all DB tables on deploy
