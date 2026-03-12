@@ -8,9 +8,8 @@ export async function runMigrations() {
 
   const client = new pg.Client({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL.includes("railway") || process.env.DATABASE_URL.includes("sslmode=require")
-      ? { rejectUnauthorized: false }
-      : false,
+    connectionTimeoutMillis: 8000,
+    ssl: { rejectUnauthorized: false },
   });
 
   try {
