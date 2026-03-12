@@ -26,3 +26,8 @@ CREATE TABLE IF NOT EXISTS feed_entries (
   image_url text,
   created_at timestamp NOT NULL DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS session (
+ sid varchar PRIMARY KEY,
+ sess json NOT NULL,
+ expire timestamp NOT NULL
+);
