@@ -17,8 +17,12 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, desc, isNull } from "drizzle-orm";
 import pg from "pg";
 
+const isRailway = process.env.DATABASE_URL?.includes("railway") ||
+  process.env.RAILWAY_ENVIRONMENT !== undefined;
+
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: isRailway ? { rejectUnauthorized: false } : false,
 });
 
 const db = drizzle(pool);
