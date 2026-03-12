@@ -17,10 +17,13 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, desc, isNull } from "drizzle-orm";
 import pg from "pg";
 
+const dbUrl = process.env.DATABASE_URL || "";
+const isInternalRailway = dbUrl.includes(".railway.internal");
+
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 8000,
+  connectionString: dbUrl,
+  ssl: isInternalRailway ? false : { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10000,
 });
 
 const db = drizzle(pool);

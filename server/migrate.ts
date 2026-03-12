@@ -6,10 +6,13 @@ export async function runMigrations() {
     return;
   }
 
+  const dbUrl = process.env.DATABASE_URL;
+  const isInternalRailway = dbUrl.includes(".railway.internal");
+
   const client = new pg.Client({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: dbUrl,
     connectionTimeoutMillis: 8000,
-    ssl: { rejectUnauthorized: false },
+    ssl: isInternalRailway ? false : { rejectUnauthorized: false },
   });
 
   try {
