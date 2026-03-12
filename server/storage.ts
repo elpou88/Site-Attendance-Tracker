@@ -20,7 +20,7 @@ import pg from "pg";
 const dbUrl = process.env.DATABASE_URL || "";
 const isInternalRailway = dbUrl.includes(".railway.internal");
 
-const pool = new pg.Pool({
+export const pool = new pg.Pool({
   connectionString: dbUrl,
   ssl: isInternalRailway ? false : { rejectUnauthorized: false },
   connectionTimeoutMillis: 10000,

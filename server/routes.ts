@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, pool } from "./storage";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
 import { loginSchema, insertUserSchema, updateContractSchema } from "@shared/schema";
@@ -40,7 +40,7 @@ export async function registerRoutes(
   app.use(
     session({
       store: new PgStore({
-        conString: process.env.DATABASE_URL,
+        pool: pool,
         createTableIfMissing: true,
       }),
       secret: process.env.SESSION_SECRET || "resolve-construction-secret",
