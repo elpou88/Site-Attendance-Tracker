@@ -31,3 +31,12 @@ CREATE TABLE IF NOT EXISTS session (
  sess json NOT NULL,
  expire timestamp NOT NULL
 );
+CREATE TABLE IF NOT EXISTS users (
+ id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+ username text NOT NULL UNIQUE,
+ password text NOT NULL,
+ full_name text NOT NULL,
+ role text NOT NULL DEFAULT 'worker',
+ contract_type text,
+ active boolean NOT NULL DEFAULT true
+);
