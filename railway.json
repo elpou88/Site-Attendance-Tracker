@@ -1,13 +1,1 @@
-{
-  "$schema": "https://railway.com/railway.schema.json",
-  "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "npm install && npm run build && npx drizzle-kit push --force"
-  },
-  "deploy": {
-    "startCommand": "NODE_ENV=production node dist/index.cjs",
-    "healthcheckPath": "/api/admin/me",
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
-  }
-}
+{\n  "$schema": "https://railway.com/railway.schema.json",\n  "build": {\n    "builder": "NIXPACKS",\n    "buildCommand": "npm install && npm run build && npx drizzle-kit push --force"\n  },\n  "deploy": {\n    "startCommand": "NODE_ENV=production node dist/index.cjs",\n    "healthcheckPath": "/",\n    "restartPolicyType": "ON_FAILURE",\n    "restartPolicyMaxRetries": 10\n  }\n}
