@@ -61,7 +61,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  await runMigrations();
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error("[migrate] Failed to run migrations, continuing anyway:", err);
+  }
   await registerRoutes(httpServer, app);
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
