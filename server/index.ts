@@ -85,7 +85,7 @@ app.use((req, res, next) => {
   // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
-  } else {
+  } else if (process.env.NODE_ENV === "development") {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }

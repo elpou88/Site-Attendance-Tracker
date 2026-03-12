@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage, pool } from "./storage";
+import { storage } from "./storage";
 import session from "express-session";
-import ConnectPgSimple from "connect-pg-simple";
+import MemoryStore from "memorystore";
 import { loginSchema, insertUserSchema, updateContractSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -30,7 +30,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  const PgStore = ConnectPgSimple(session);
+  const SessionStore = MemoryStore(session);
 
   app.set("trust proxy", 1);
 
@@ -39,10 +39,7 @@ export async function registerRoutes(
 
   app.use(
     session({
-      store: new PgStore({
-        pool: pool,
-        createTableIfMissing: true,
-      }),
+      store: new SessionStore({ checkPeriod: 86400000 }),
       secret: process.env.SESSION_SECRET || "resolve-construction-secret",
       resave: false,
       saveUninitialized: false,
