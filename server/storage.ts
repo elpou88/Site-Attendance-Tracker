@@ -18,11 +18,11 @@ import { eq, and, desc, isNull } from "drizzle-orm";
 import pg from "pg";
 
 const dbUrl = process.env.DATABASE_URL || "";
-const isInternalRailway = dbUrl.includes(".railway.internal");
+const isInternal = dbUrl.includes(".internal") || dbUrl.includes("helium") || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
 
 export const pool = new pg.Pool({
   connectionString: dbUrl,
-  ssl: isInternalRailway ? false : { rejectUnauthorized: false },
+  ssl: isInternal ? false : { rejectUnauthorized: false },
   connectionTimeoutMillis: 10000,
 });
 
