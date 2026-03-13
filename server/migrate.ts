@@ -1,6 +1,15 @@
 import pg from "pg";
 import { getDbUrl, isSslDisabled } from "./db-url";
 
+function maskUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.username}:***@${u.host}${u.pathname}`;
+  } catch {
+    return "(invalid url)";
+  }
+}
+
 export async function runMigrations() {
   const dbUrl = getDbUrl();
 
@@ -9,17 +18,19 @@ export async function runMigrations() {
     return;
   }
 
-  console.log("[migrate] Connecting to database...");
+  const sslDisabled = isSslDisabled(dbUrl);
+  console.log(`[migrate] Connecting to: ${maskUrl(dbUrl)}`);
+  console.log(`[migrate] SSL: ${sslDisabled ? "disabled (internal/local)" : "enabled"}`);
 
   const client = new pg.Client({
     connectionString: dbUrl,
-    connectionTimeoutMillis: 10000,
-    ssl: isSslDisabled(dbUrl) ? false : { rejectUnauthorized: false },
+    connectionTimeoutMillis: 20000,
+    ssl: sslDisabled ? false : { rejectUnauthorized: false },
   });
 
   try {
     await client.connect();
-    console.log("[migrate] Connected to database, running migrations...");
+    console.log("[migrate] Connected successfully, running migrations...");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -72,11 +83,12 @@ export async function runMigrations() {
       );
     `);
 
-    console.log("[migrate] Migrations completed successfully");
-  } catch (err) {
-    console.error("[migrate] Migration error:", err);
+    console.log("[migrate] All tables created/verified successfully");
+  } catch (err: any) {
+    console.error(`[migrate] Connection failed: ${err.message}`);
+    console.error(`[migrate] URL attempted: ${maskUrl(dbUrl)}`);
     throw err;
   } finally {
-    await client.end();
+    try { await client.end(); } catch {}
   }
 }
