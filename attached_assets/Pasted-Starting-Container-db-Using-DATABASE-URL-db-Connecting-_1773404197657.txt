@@ -1,0 +1,79 @@
+Starting Container
+[db] Using DATABASE_URL
+[db] Connecting to host=interchange.proxy.rlwy.net port=31908 db=attendance ssl=disabled
+[db] Using DATABASE_URL
+[migrate] Connecting to: postgresql://postgres:***@interchange.proxy.rlwy.net:31908/attendance
+[migrate] SSL: disabled
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[migrate] Connection failed: read ECONNRESET
+12:13:39 PM [express] serving on port 8080
+[migrate] Host: interchange.proxy.rlwy.net:31908 DB: attendance
+[migrate] Failed to run migrations, continuing anyway: Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:217:20) {
+  errno: -104,
+12:13:48 PM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+12:13:48 PM [express] GET /api/admin/me 401 in 1ms :: {"message":"Not authenticated"}
+12:13:53 PM [express] GET /api/auth/me 401 in 2ms :: {"message":"Not authenticated"}
+12:13:53 PM [express] GET /api/admin/me 401 in 1ms :: {"message":"Not authenticated"}
+12:13:54 PM [express] GET /api/admin/me 401 in 1ms :: {"message":"Not authenticated"}
+12:13:54 PM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+12:13:59 PM [express] GET /api/auth/me 401 in 2ms :: {"message":"Not authenticated"}
+12:13:59 PM [express] GET /api/admin/me 401 in 1ms :: {"message":"Not authenticated"}
+12:14:06 PM [express] POST /api/admin/login 200 in 2ms :: {"success":true}
+[db] Connection error (attempt 1/3): read ECONNRESET. Retrying...
+[db] Connection error (attempt 1/3): read ECONNRESET. Retrying...
+[db] Connection error (attempt 1/3): read ECONNRESET. Retrying...
+[db] Connection error (attempt 2/3): read ECONNRESET. Retrying...
+[db] Connection error (attempt 2/3): read ECONNRESET. Retrying...
+[db] Connection error (attempt 2/3): read ECONNRESET. Retrying...
+[db] Connection error (attempt 1/3): read ECONNRESET. Retrying...
+    at /app/dist/index.cjs:68:13326
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/dist/index.cjs:98:98585
+    at async Ge (/app/dist/index.cjs:98:103229)
+  syscall: 'read'
+  code: 'ECONNRESET',
+    at async /app/dist/index.cjs:98:129219 {
+}
+  syscall: 'read'
+  errno: -104,
+12:14:28 PM [express] GET /api/workers 500 in 22318ms :: {"message":"Failed to get workers","error":"read ECONNRESET"}
+}
+[GET /api/workers] Error: read ECONNRESET
+  code: 'ECONNRESET',
+[attendance/today] Error: read ECONNRESET
+12:14:28 PM [express] GET /api/attendance/today 500 in 22329ms :: {"message":"Failed to get attendance","error":"read ECONNRESET"}
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /app/dist/index.cjs:68:13326
+    at async /app/dist/index.cjs:98:98585
+    at async /app/dist/index.cjs:98:105063
+    at async Ge (/app/dist/index.cjs:98:103229)
+    at async /app/dist/index.cjs:98:132624 {
+  errno: -104,
+[feed/all] Error: read ECONNRESET
+    at /app/dist/index.cjs:68:13326
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/dist/index.cjs:98:98585
+    at async /app/dist/index.cjs:98:105601
+    at async Ge (/app/dist/index.cjs:98:103229)
+    at async /app/dist/index.cjs:98:133694 {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+12:14:29 PM [express] GET /api/feed/all 500 in 22465ms :: {"message":"Failed to get feed","error":"read ECONNRESET"}
+[db] Connection error (attempt 2/3): read ECONNRESET. Retrying...
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/dist/index.cjs:98:98585
+    at async /app/dist/index.cjs:98:103756
+    at async Ge (/app/dist/index.cjs:98:103229)
+    at async /app/dist/index.cjs:98:129666 {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+12:14:40 PM [express] POST /api/workers 500 in 22598ms :: {"message":"Failed to create worker","error":"read ECONNRESET"}
+[POST /api/workers] Error: read ECONNRESET
+    at /app/dist/index.cjs:68:13326

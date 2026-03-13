@@ -22,7 +22,19 @@ export function parseDbUrl(url: string): ParsedDbUrl {
 }
 
 export function getDbUrl(): string {
-  // Railway provides DATABASE_PRIVATE_URL for internal connections
+  // Replit internal database — always prefer this when available
+  const pgHost = process.env.PGHOST || "";
+  if (pgHost && (pgHost === "helium" || pgHost.endsWith(".helium"))) {
+    const user = process.env.PGUSER || "postgres";
+    const password = process.env.PGPASSWORD || "";
+    const db = process.env.PGDATABASE || "heliumdb";
+    const port = process.env.PGPORT || "5432";
+    const built = `postgresql://${user}:${encodeURIComponent(password)}@${pgHost}:${port}/${db}`;
+    console.log(`[db] Using Replit internal database (host: ${pgHost})`);
+    return built;
+  }
+
+  // Railway internal private URL (preferred over public proxy)
   const privateUrl = process.env.DATABASE_PRIVATE_URL || "";
   if (privateUrl && privateUrl.includes("://")) {
     console.log("[db] Using DATABASE_PRIVATE_URL (Railway internal)");
@@ -31,21 +43,21 @@ export function getDbUrl(): string {
 
   // Standard DATABASE_URL
   const url = process.env.DATABASE_URL || "";
-  if (url && !url.match(/[@/](base|localhost)([:/]|$)/) && url.includes("://")) {
+  if (url && url.includes("://")) {
     console.log("[db] Using DATABASE_URL");
     return url;
   }
 
-  // Fallback: build URL from individual Railway/Postgres env vars
+  // Fallback: build URL from individual env vars
   const host =
-    process.env.PGHOST ||
     process.env.POSTGRES_HOST ||
     process.env.RAILWAY_PRIVATE_DOMAIN ||
+    pgHost ||
     "";
   const port = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
   const user = process.env.PGUSER || process.env.POSTGRES_USER || "postgres";
   const password = process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD || "";
-  const database = process.env.PGDATABASE || process.env.POSTGRES_DB || "railway";
+  const database = process.env.PGDATABASE || process.env.POSTGRES_DB || "postgres";
 
   if (host) {
     const built = `postgresql://${user}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
@@ -58,13 +70,19 @@ export function getDbUrl(): string {
 }
 
 export function isSslDisabled(url: string): boolean {
-  return (
-    url.includes("helium") ||
-    url.includes(".internal") ||
-    url.includes("railway.internal") ||
-    url.includes("rlwy.net") ||
-    url.includes("localhost") ||
-    url.includes("127.0.0.1") ||
-    url.includes("sslmode=disable")
-  );
+  try {
+    const u = new URL(url);
+    const host = u.hostname;
+    return (
+      host === "helium" ||
+      host.endsWith(".helium") ||
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.endsWith(".railway.internal") ||
+      host === "railway.internal" ||
+      u.searchParams.get("sslmode") === "disable"
+    );
+  } catch {
+    return false;
+  }
 }
