@@ -52,17 +52,16 @@ A construction site worker management app for Resolve Construction Ltd where:
 - Messages display sender name (other workers) or right-aligned (own messages)
 - API: GET /api/chat, POST /api/chat
 
-## Railway Deployment
-- **Config file**: `railway.json` (build + start commands, health check)
-- **Build**: `npm install && npm run build && npx drizzle-kit push --force`
-- **Start**: `NODE_ENV=production node dist/index.cjs`
-- **Required env vars in Railway**:
-  - `DATABASE_URL` - PostgreSQL connection string (Railway provides this with PostgreSQL addon)
-  - `SESSION_SECRET` - Random secret string for session encryption
-  - `PORT` - Set automatically by Railway
-  - `NODE_ENV` - Set to `production`
-- **See also**: `.env.example` for all required variables
-- **Notes**: 
-  - Vite config gracefully handles missing Replit-specific plugins
-  - `trust proxy` always enabled for reverse proxy compatibility
-  - `drizzle-kit push --force` auto-creates all DB tables on deploy
+## Replit Environment
+- **Database**: Replit built-in PostgreSQL (auto-configured via `DATABASE_URL` env var)
+- **Dev server**: `npm run dev` (tsx server/index.ts, port 5000)
+- **Build**: `npm run build` → `dist/index.cjs` + `dist/public/`
+- **Start (prod)**: `NODE_ENV=production node dist/index.cjs`
+- **Required env vars**:
+  - `DATABASE_URL` - Provided automatically by Replit PostgreSQL
+  - `SESSION_SECRET` - Set in Replit Secrets for production
+  - `PORT` - Set to 5000 in `.replit`
+- **Notes**:
+  - DB migrations run automatically on startup via `runMigrations()`
+  - `trust proxy` enabled for Replit's reverse proxy
+  - Uploads stored in `uploads/` directory

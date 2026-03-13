@@ -23,7 +23,15 @@ const dbUrl = getDbUrl();
 export const pool = new pg.Pool({
   connectionString: dbUrl,
   ssl: isSslDisabled(dbUrl) ? false : { rejectUnauthorized: false },
-  connectionTimeoutMillis: 10000,
+  max: 10,
+  connectionTimeoutMillis: 15000,
+  idleTimeoutMillis: 10000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
+});
+
+pool.on("error", (err) => {
+  console.error("[db] Unexpected pool client error:", err.message);
 });
 
 const db = drizzle(pool);
