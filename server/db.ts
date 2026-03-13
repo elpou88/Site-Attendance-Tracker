@@ -10,13 +10,18 @@ const pool = new Pool({
   ssl: isSslDisabled(dbUrl) ? false : { rejectUnauthorized: false },
   max: 10,
   connectionTimeoutMillis: 15000,
-  idleTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
   keepAlive: true,
-  keepAliveInitialDelayMillis: 10000,
+  keepAliveInitialDelayMillis: 5000,
+  allowExitOnIdle: false,
 })
 
 pool.on("error", (err: Error) => {
   console.error("[db] Unexpected pool client error:", err.message);
+})
+
+pool.on("connect", () => {
+  console.log("[db] New client connected to pool");
 })
 
 export const db = drizzle(pool)

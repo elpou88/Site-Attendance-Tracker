@@ -33,9 +33,10 @@ export const pool = new pg.Pool({
   ssl: sslDisabled ? false : { rejectUnauthorized: false },
   max: 10,
   connectionTimeoutMillis: 15000,
-  idleTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
   keepAlive: true,
-  keepAliveInitialDelayMillis: 10000,
+  keepAliveInitialDelayMillis: 5000,
+  allowExitOnIdle: false,
 });
 
 pool.on("error", (err) => {
@@ -43,6 +44,28 @@ pool.on("error", (err) => {
 });
 
 const db = drizzle(pool);
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const isConnectionError =
+        err.code === "ECONNRESET" ||
+        err.code === "ECONNREFUSED" ||
+        err.code === "EPIPE" ||
+        err.message?.includes("Connection terminated") ||
+        err.message?.includes("connection timeout");
+      if (isConnectionError && attempt < retries) {
+        console.warn(`[db] Connection error (attempt ${attempt}/${retries}): ${err.message}. Retrying...`);
+        await new Promise((r) => setTimeout(r, 300 * attempt));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("Unreachable");
+}
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -70,136 +93,168 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return withRetry(async () => {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    });
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    return withRetry(async () => {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
+    });
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    return withRetry(async () => {
+      const [user] = await db.insert(users).values(insertUser).returning();
+      return user;
+    });
   }
 
   async getAllWorkers(): Promise<User[]> {
-    return db.select().from(users).where(eq(users.role, "worker"));
+    return withRetry(() => db.select().from(users).where(eq(users.role, "worker")));
   }
 
   async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
-    const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
-    return user;
+    return withRetry(async () => {
+      const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+      return user;
+    });
   }
 
   async updateContract(id: string, data: UpdateContract): Promise<User | undefined> {
-    const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
-    return user;
+    return withRetry(async () => {
+      const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+      return user;
+    });
   }
 
   async deleteUser(id: string): Promise<void> {
-    await db.delete(users).where(eq(users.id, id));
+    return withRetry(() => db.delete(users).where(eq(users.id, id)).then(() => undefined));
   }
 
   async signIn(userId: string, lat?: number, lng?: number): Promise<Attendance> {
-    const today = new Date().toISOString().split("T")[0];
-    const [record] = await db
-      .insert(attendance)
-      .values({
-        userId,
-        date: today,
-        signInTime: new Date(),
-        signInLat: lat ?? null,
-        signInLng: lng ?? null,
-      })
-      .returning();
-    return record;
+    return withRetry(async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const [record] = await db
+        .insert(attendance)
+        .values({
+          userId,
+          date: today,
+          signInTime: new Date(),
+          signInLat: lat ?? null,
+          signInLng: lng ?? null,
+        })
+        .returning();
+      return record;
+    });
   }
 
   async signOut(attendanceId: string, lat?: number, lng?: number): Promise<Attendance | undefined> {
-    const [record] = await db
-      .update(attendance)
-      .set({
-        signOutTime: new Date(),
-        signOutLng: lng ?? null,
-        signOutLat: lat ?? null,
-      })
-      .where(eq(attendance.id, attendanceId))
-      .returning();
-    return record;
+    return withRetry(async () => {
+      const [record] = await db
+        .update(attendance)
+        .set({
+          signOutTime: new Date(),
+          signOutLng: lng ?? null,
+          signOutLat: lat ?? null,
+        })
+        .where(eq(attendance.id, attendanceId))
+        .returning();
+      return record;
+    });
   }
 
   async updateAttendanceLocation(attendanceId: string, lat: number, lng: number): Promise<Attendance | undefined> {
-    const [record] = await db
-      .update(attendance)
-      .set({ signInLat: lat, signInLng: lng })
-      .where(eq(attendance.id, attendanceId))
-      .returning();
-    return record;
+    return withRetry(async () => {
+      const [record] = await db
+        .update(attendance)
+        .set({ signInLat: lat, signInLng: lng })
+        .where(eq(attendance.id, attendanceId))
+        .returning();
+      return record;
+    });
   }
 
   async getActiveAttendance(userId: string): Promise<Attendance | undefined> {
-    const [record] = await db
-      .select()
-      .from(attendance)
-      .where(and(eq(attendance.userId, userId), isNull(attendance.signOutTime)));
-    return record;
+    return withRetry(async () => {
+      const [record] = await db
+        .select()
+        .from(attendance)
+        .where(and(eq(attendance.userId, userId), isNull(attendance.signOutTime)));
+      return record;
+    });
   }
 
   async getAttendanceByDate(date: string): Promise<(Attendance & { user?: User })[]> {
-    const rows = await db
-      .select({ a: attendance, u: users })
-      .from(attendance)
-      .leftJoin(users, eq(attendance.userId, users.id))
-      .where(eq(attendance.date, date))
-      .orderBy(desc(attendance.signInTime));
-    return rows.map((r) => ({ ...r.a, user: r.u ?? undefined }));
+    return withRetry(async () => {
+      const rows = await db
+        .select({ a: attendance, u: users })
+        .from(attendance)
+        .leftJoin(users, eq(attendance.userId, users.id))
+        .where(eq(attendance.date, date))
+        .orderBy(desc(attendance.signInTime));
+      return rows.map((r) => ({ ...r.a, user: r.u ?? undefined }));
+    });
   }
 
   async getAttendanceByUser(userId: string): Promise<Attendance[]> {
-    return db
-      .select()
-      .from(attendance)
-      .where(eq(attendance.userId, userId))
-      .orderBy(desc(attendance.signInTime));
+    return withRetry(() =>
+      db
+        .select()
+        .from(attendance)
+        .where(eq(attendance.userId, userId))
+        .orderBy(desc(attendance.signInTime))
+    );
   }
 
   async createFeedEntry(entry: InsertFeedEntry): Promise<FeedEntry> {
-    const [feedEntry] = await db.insert(feedEntries).values(entry).returning();
-    return feedEntry;
+    return withRetry(async () => {
+      const [feedEntry] = await db.insert(feedEntries).values(entry).returning();
+      return feedEntry;
+    });
   }
 
   async getFeedEntriesByUser(userId: string): Promise<FeedEntry[]> {
-    return db
-      .select()
-      .from(feedEntries)
-      .where(eq(feedEntries.userId, userId))
-      .orderBy(desc(feedEntries.createdAt));
+    return withRetry(() =>
+      db
+        .select()
+        .from(feedEntries)
+        .where(eq(feedEntries.userId, userId))
+        .orderBy(desc(feedEntries.createdAt))
+    );
   }
 
   async getAllFeedEntries(): Promise<(FeedEntry & { user?: User })[]> {
-    const rows = await db
-      .select({ f: feedEntries, u: users })
-      .from(feedEntries)
-      .leftJoin(users, eq(feedEntries.userId, users.id))
-      .orderBy(desc(feedEntries.createdAt));
-    return rows.map((r) => ({ ...r.f, user: r.u ?? undefined }));
+    return withRetry(async () => {
+      const rows = await db
+        .select({ f: feedEntries, u: users })
+        .from(feedEntries)
+        .leftJoin(users, eq(feedEntries.userId, users.id))
+        .orderBy(desc(feedEntries.createdAt));
+      return rows.map((r) => ({ ...r.f, user: r.u ?? undefined }));
+    });
   }
 
   async createChatMessage(msg: InsertChatMessage): Promise<ChatMessage> {
-    const [chatMsg] = await db.insert(chatMessages).values(msg).returning();
-    return chatMsg;
+    return withRetry(async () => {
+      const [chatMsg] = await db.insert(chatMessages).values(msg).returning();
+      return chatMsg;
+    });
   }
 
   async getChatMessages(limit = 100): Promise<(ChatMessage & { user?: User })[]> {
-    const rows = await db
-      .select({ m: chatMessages, u: users })
-      .from(chatMessages)
-      .leftJoin(users, eq(chatMessages.userId, users.id))
-      .orderBy(desc(chatMessages.createdAt))
-      .limit(limit);
-    return rows.map((r) => ({ ...r.m, user: r.u ?? undefined })).reverse();
+    return withRetry(async () => {
+      const rows = await db
+        .select({ m: chatMessages, u: users })
+        .from(chatMessages)
+        .leftJoin(users, eq(chatMessages.userId, users.id))
+        .orderBy(desc(chatMessages.createdAt))
+        .limit(limit);
+      return rows.map((r) => ({ ...r.m, user: r.u ?? undefined })).reverse();
+    });
   }
 }
 
