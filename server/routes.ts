@@ -53,17 +53,9 @@ export async function registerRoutes(
     })
   );
 
-  // Health check — also tests real DB connectivity
-  app.get("/health", async (_req, res) => {
-    try {
-      const client = await pool.connect();
-      await client.query("SELECT 1");
-      client.release();
-      res.status(200).json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
-    } catch (err: any) {
-      console.error("[health] DB check failed:", err.message);
-      res.status(500).json({ status: "error", db: "disconnected", error: err.message });
-    }
+  // Health check — always returns 200 so Railway knows the server is up
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   app.post("/api/admin/login", async (req, res) => {
