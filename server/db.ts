@@ -3,8 +3,8 @@ import pkg from "pg"
 
 const { Pool } = pkg
 
-// Use Replit's built-in database (reliable, already configured)
-// RAILWAY_DATABASE_URL kept as optional override if ever accessible
+// On Railway production: DATABASE_URL = internal railway URL (works natively)
+// On Replit dev: DATABASE_URL = Replit's built-in Helium DB
 const dbUrl = process.env.DATABASE_URL || "";
 
 if (!dbUrl) {
