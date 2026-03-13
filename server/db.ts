@@ -3,15 +3,20 @@ import pkg from "pg"
 
 const { Pool } = pkg
 
-const dbUrl = process.env.DATABASE_URL || "";
-const isInternalDb = dbUrl.includes("helium") || dbUrl.includes(".internal") || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
+const dbUrl = process.env.RAILWAY_DATABASE_URL || process.env.DATABASE_URL || "";
+
+if (!dbUrl) {
+  throw new Error("No database URL configured. Set RAILWAY_DATABASE_URL.");
+}
+
+const isInternal = dbUrl.includes(".internal") || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") || dbUrl.includes("helium");
 
 const pool = new Pool({
   connectionString: dbUrl,
-  ssl: isInternalDb ? false : { rejectUnauthorized: false },
+  ssl: isInternal ? false : { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000
+  connectionTimeoutMillis: 10000,
 })
 
 export const db = drizzle(pool)

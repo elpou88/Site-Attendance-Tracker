@@ -1,18 +1,19 @@
 import pg from "pg";
 
 export async function runMigrations() {
-  if (!process.env.DATABASE_URL) {
-    console.log("[migrate] No DATABASE_URL set, skipping migrations");
+  const dbUrl = process.env.RAILWAY_DATABASE_URL || process.env.DATABASE_URL;
+
+  if (!dbUrl) {
+    console.log("[migrate] No DATABASE URL set, skipping migrations");
     return;
   }
 
-  const dbUrl = process.env.DATABASE_URL;
-  const isInternalRailway = dbUrl.includes(".railway.internal");
+  const isInternal = dbUrl.includes(".internal") || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") || dbUrl.includes("helium");
 
   const client = new pg.Client({
     connectionString: dbUrl,
-    connectionTimeoutMillis: 8000,
-    ssl: isInternalRailway ? false : { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
+    ssl: isInternal ? false : { rejectUnauthorized: false },
   });
 
   try {
