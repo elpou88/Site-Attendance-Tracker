@@ -1,0 +1,52 @@
+[migrate] Connection failed: timeout expired
+[migrate] URL attempted: postgresql://postgres:***@postgres-wx7v.railway.internal:5432/attendance
+[migrate] Failed to run migrations, continuing anyway: Error: timeout expired
+    at Timeout._onTimeout (/app/dist/index.cjs:68:4115)
+    at listOnTimeout (node:internal/timers:569:17)
+    at process.processTimers (node:internal/timers:512:7)
+11:22:54 AM [express] serving on port 8080
+11:24:06 AM [express] GET /api/admin/me 401 in 2ms :: {"message":"Not authenticated"}
+11:24:06 AM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+11:24:11 AM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+11:24:11 AM [express] GET /api/admin/me 401 in 1ms :: {"message":"Not authenticated"}
+11:24:19 AM [express] POST /api/admin/login 200 in 3ms :: {"success":true}
+[feed/all] Error: Connection terminated due to connection timeout
+    at /app/dist/index.cjs:68:13326
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/dist/index.cjs:98:98585
+    at async sh.getAllFeedEntries (/app/dist/index.cjs:98:104338)
+    at async /app/dist/index.cjs:98:132394 {
+  [cause]: Error: Connection terminated unexpectedly
+      at Qm.<anonymous> (/app/dist/index.cjs:68:4601)
+      at Object.onceWrapper (node:events:631:28)
+      at Qm.emit (node:events:517:28)
+      at Socket.<anonymous> (/app/dist/index.cjs:67:49318)
+      at Socket.emit (node:events:517:28)
+      at TCP.<anonymous> (node:net:350:12)
+}
+[attendance/today] Error: Connection terminated due to connection timeout
+    at /app/dist/index.cjs:68:13326
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/dist/index.cjs:98:98585
+    at async sh.getAttendanceByDate (/app/dist/index.cjs:98:103852)
+    at async /app/dist/index.cjs:98:131324 {
+  [cause]: Error: Connection terminated unexpectedly
+      at Qm.<anonymous> (/app/dist/index.cjs:68:4601)
+      at Object.onceWrapper (node:events:631:28)
+      at Qm.emit (node:events:517:28)
+      at Socket.<anonymous> (/app/dist/index.cjs:67:49318)
+      at Socket.emit (node:events:517:28)
+      at TCP.<anonymous> (node:net:350:12)
+}
+[GET /api/workers] Error: Connection terminated due to connection timeout
+    at /app/dist/index.cjs:68:13326
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/dist/index.cjs:98:98585
+    at async /app/dist/index.cjs:98:127919 {
+  [cause]: Error: Connection terminated unexpectedly
+      at Qm.<anonymous> (/app/dist/index.cjs:68:4601)
+      at Object.onceWrapper (node:events:631:28)
+      at Qm.emit (node:events:517:28)
+      at Socket.<anonymous> (/app/dist/index.cjs:67:49318)
+      at Socket.emit (node:events:517:28)
+      at TCP.<anonymous> (node:net:350:12)
