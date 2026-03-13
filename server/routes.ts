@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, pool } from "./storage";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { loginSchema, insertUserSchema, updateContractSchema } from "@shared/schema";
@@ -53,8 +53,17 @@ export async function registerRoutes(
     })
   );
 
-  app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  // Health check — also tests real DB connectivity
+  app.get("/health", async (_req, res) => {
+    try {
+      const client = await pool.connect();
+      await client.query("SELECT 1");
+      client.release();
+      res.status(200).json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("[health] DB check failed:", err.message);
+      res.status(500).json({ status: "error", db: "disconnected", error: err.message });
+    }
   });
 
   app.post("/api/admin/login", async (req, res) => {
@@ -65,7 +74,8 @@ export async function registerRoutes(
       }
       (req.session as any).isAdmin = true;
       return res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("[admin/login]", error);
       return res.status(500).json({ message: "Admin login failed" });
     }
   });
@@ -112,8 +122,9 @@ export async function registerRoutes(
       (req.session as any).userId = user.id;
       const { password, ...safeUser } = user;
       return res.json(safeUser);
-    } catch (error) {
-      return res.status(500).json({ message: "Login failed" });
+    } catch (error: any) {
+      console.error("[auth/login]", error);
+      return res.status(500).json({ message: "Login failed", error: error.message });
     }
   });
 
@@ -148,16 +159,21 @@ export async function registerRoutes(
   };
 
   app.get("/api/workers", requireAdmin, async (_req, res) => {
-    const workers = await storage.getAllWorkers();
-    const safeWorkers = workers.map(({ password, ...w }) => w);
-    res.json(safeWorkers);
+    try {
+      const workers = await storage.getAllWorkers();
+      const safeWorkers = workers.map(({ password, ...w }) => w);
+      res.json(safeWorkers);
+    } catch (error: any) {
+      console.error("[GET /api/workers]", error);
+      res.status(500).json({ message: "Failed to get workers", error: error.message });
+    }
   });
 
   app.post("/api/workers", requireAdmin, async (req, res) => {
     try {
       const parsed = insertUserSchema.safeParse({ ...req.body, role: "worker" });
       if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid worker data" });
+        return res.status(400).json({ message: "Invalid worker data", errors: parsed.error.errors });
       }
       parsed.data.username = parsed.data.username.trim();
       parsed.data.fullName = parsed.data.fullName.trim();
@@ -169,8 +185,9 @@ export async function registerRoutes(
       const worker = await storage.createUser({ ...parsed.data, password: hashedPassword });
       const { password, ...safeWorker } = worker;
       return res.json(safeWorker);
-    } catch (error) {
-      return res.status(500).json({ message: "Failed to create worker" });
+    } catch (error: any) {
+      console.error("[POST /api/workers]", error);
+      return res.status(500).json({ message: "Failed to create worker", error: error.message });
     }
   });
 
@@ -180,8 +197,9 @@ export async function registerRoutes(
       if (!worker) return res.status(404).json({ message: "Worker not found" });
       const { password, ...safeWorker } = worker;
       return res.json(safeWorker);
-    } catch (error) {
-      return res.status(500).json({ message: "Failed to update worker" });
+    } catch (error: any) {
+      console.error("[PATCH /api/workers/:id]", error);
+      return res.status(500).json({ message: "Failed to update worker", error: error.message });
     }
   });
 
@@ -195,14 +213,20 @@ export async function registerRoutes(
       if (!worker) return res.status(404).json({ message: "Worker not found" });
       const { password, ...safeWorker } = worker;
       return res.json(safeWorker);
-    } catch (error) {
-      return res.status(500).json({ message: "Failed to update contract" });
+    } catch (error: any) {
+      console.error("[PATCH /api/workers/:id/contract]", error);
+      return res.status(500).json({ message: "Failed to update contract", error: error.message });
     }
   });
 
   app.delete("/api/workers/:id", requireAdmin, async (req, res) => {
-    await storage.deleteUser(req.params.id);
-    res.json({ message: "Worker deleted" });
+    try {
+      await storage.deleteUser(req.params.id);
+      res.json({ message: "Worker deleted" });
+    } catch (error: any) {
+      console.error("[DELETE /api/workers/:id]", error);
+      res.status(500).json({ message: "Failed to delete worker", error: error.message });
+    }
   });
 
   app.post("/api/attendance/sign-in", requireAuth, async (req: any, res) => {
@@ -213,8 +237,9 @@ export async function registerRoutes(
       }
       const record = await storage.signIn(req.user.id, req.body.lat, req.body.lng);
       return res.json(record);
-    } catch (error) {
-      return res.status(500).json({ message: "Sign in failed" });
+    } catch (error: any) {
+      console.error("[attendance/sign-in]", error);
+      return res.status(500).json({ message: "Sign in failed", error: error.message });
     }
   });
 
@@ -226,8 +251,9 @@ export async function registerRoutes(
       }
       const record = await storage.signOut(active.id, req.body.lat, req.body.lng);
       return res.json(record);
-    } catch (error) {
-      return res.status(500).json({ message: "Sign out failed" });
+    } catch (error: any) {
+      console.error("[attendance/sign-out]", error);
+      return res.status(500).json({ message: "Sign out failed", error: error.message });
     }
   });
 
@@ -243,32 +269,48 @@ export async function registerRoutes(
       }
       const record = await storage.updateAttendanceLocation(active.id, lat, lng);
       return res.json(record);
-    } catch (error) {
-      return res.status(500).json({ message: "Failed to update location" });
+    } catch (error: any) {
+      console.error("[attendance/update-location]", error);
+      return res.status(500).json({ message: "Failed to update location", error: error.message });
     }
   });
 
   app.get("/api/attendance/status", requireAuth, async (req: any, res) => {
-    const active = await storage.getActiveAttendance(req.user.id);
-    res.json({ signedIn: !!active, attendance: active || null });
+    try {
+      const active = await storage.getActiveAttendance(req.user.id);
+      res.json({ signedIn: !!active, attendance: active || null });
+    } catch (error: any) {
+      console.error("[attendance/status]", error);
+      res.status(500).json({ message: "Failed to get status", error: error.message });
+    }
   });
 
   app.get("/api/attendance/today", requireAdmin, async (_req, res) => {
-    const today = new Date().toISOString().split("T")[0];
-    const records = await storage.getAttendanceByDate(today);
-    const safeRecords = records.map((r) => {
-      if (r.user) {
-        const { password, ...safeUser } = r.user;
-        return { ...r, user: safeUser };
-      }
-      return r;
-    });
-    res.json(safeRecords);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const records = await storage.getAttendanceByDate(today);
+      const safeRecords = records.map((r) => {
+        if (r.user) {
+          const { password, ...safeUser } = r.user;
+          return { ...r, user: safeUser };
+        }
+        return r;
+      });
+      res.json(safeRecords);
+    } catch (error: any) {
+      console.error("[attendance/today]", error);
+      res.status(500).json({ message: "Failed to get attendance", error: error.message });
+    }
   });
 
   app.get("/api/attendance/worker/:id", requireAdmin, async (req, res) => {
-    const records = await storage.getAttendanceByUser(req.params.id);
-    res.json(records);
+    try {
+      const records = await storage.getAttendanceByUser(req.params.id);
+      res.json(records);
+    } catch (error: any) {
+      console.error("[attendance/worker/:id]", error);
+      res.status(500).json({ message: "Failed to get attendance", error: error.message });
+    }
   });
 
   app.post("/api/feed", requireAuth, upload.single("image"), async (req: any, res) => {
@@ -280,38 +322,54 @@ export async function registerRoutes(
         imageUrl,
       });
       return res.json(entry);
-    } catch (error) {
-      return res.status(500).json({ message: "Failed to create feed entry" });
+    } catch (error: any) {
+      console.error("[feed POST]", error);
+      return res.status(500).json({ message: "Failed to create feed entry", error: error.message });
     }
   });
 
   app.get("/api/feed/mine", requireAuth, async (req: any, res) => {
-    const entries = await storage.getFeedEntriesByUser(req.user.id);
-    res.json(entries);
+    try {
+      const entries = await storage.getFeedEntriesByUser(req.user.id);
+      res.json(entries);
+    } catch (error: any) {
+      console.error("[feed/mine]", error);
+      res.status(500).json({ message: "Failed to get feed", error: error.message });
+    }
   });
 
   app.get("/api/feed/all", requireAdmin, async (_req, res) => {
-    const entries = await storage.getAllFeedEntries();
-    const safeEntries = entries.map((e) => {
-      if (e.user) {
-        const { password, ...safeUser } = e.user;
-        return { ...e, user: safeUser };
-      }
-      return e;
-    });
-    res.json(safeEntries);
+    try {
+      const entries = await storage.getAllFeedEntries();
+      const safeEntries = entries.map((e) => {
+        if (e.user) {
+          const { password, ...safeUser } = e.user;
+          return { ...e, user: safeUser };
+        }
+        return e;
+      });
+      res.json(safeEntries);
+    } catch (error: any) {
+      console.error("[feed/all]", error);
+      res.status(500).json({ message: "Failed to get feed", error: error.message });
+    }
   });
 
   app.get("/api/chat", requireAuth, async (_req, res) => {
-    const messages = await storage.getChatMessages(100);
-    const safeMessages = messages.map((m) => {
-      if (m.user) {
-        const { password, ...safeUser } = m.user;
-        return { ...m, user: safeUser };
-      }
-      return m;
-    });
-    res.json(safeMessages);
+    try {
+      const messages = await storage.getChatMessages(100);
+      const safeMessages = messages.map((m) => {
+        if (m.user) {
+          const { password, ...safeUser } = m.user;
+          return { ...m, user: safeUser };
+        }
+        return m;
+      });
+      res.json(safeMessages);
+    } catch (error: any) {
+      console.error("[chat GET]", error);
+      res.status(500).json({ message: "Failed to get messages", error: error.message });
+    }
   });
 
   app.post("/api/chat", requireAuth, async (req: any, res) => {
@@ -327,8 +385,9 @@ export async function registerRoutes(
       const user = await storage.getUser(req.user.id);
       const { password, ...safeUser } = user!;
       return res.json({ ...chatMsg, user: safeUser });
-    } catch (error) {
-      return res.status(500).json({ message: "Failed to send message" });
+    } catch (error: any) {
+      console.error("[chat POST]", error);
+      return res.status(500).json({ message: "Failed to send message", error: error.message });
     }
   });
 
