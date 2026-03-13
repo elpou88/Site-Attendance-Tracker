@@ -22,19 +22,7 @@ export function parseDbUrl(url: string): ParsedDbUrl {
 }
 
 export function getDbUrl(): string {
-  // Replit internal database — always prefer this when available
-  const pgHost = process.env.PGHOST || "";
-  if (pgHost && (pgHost === "helium" || pgHost.endsWith(".helium"))) {
-    const user = process.env.PGUSER || "postgres";
-    const password = process.env.PGPASSWORD || "";
-    const db = process.env.PGDATABASE || "heliumdb";
-    const port = process.env.PGPORT || "5432";
-    const built = `postgresql://${user}:${encodeURIComponent(password)}@${pgHost}:${port}/${db}`;
-    console.log(`[db] Using Replit internal database (host: ${pgHost})`);
-    return built;
-  }
-
-  // Railway internal private URL (preferred over public proxy)
+  // Railway provides DATABASE_PRIVATE_URL for internal connections
   const privateUrl = process.env.DATABASE_PRIVATE_URL || "";
   if (privateUrl && privateUrl.includes("://")) {
     console.log("[db] Using DATABASE_PRIVATE_URL (Railway internal)");
@@ -48,11 +36,11 @@ export function getDbUrl(): string {
     return url;
   }
 
-  // Fallback: build URL from individual env vars
+  // Fallback: build URL from individual Railway/Postgres env vars
   const host =
+    process.env.PGHOST ||
     process.env.POSTGRES_HOST ||
     process.env.RAILWAY_PRIVATE_DOMAIN ||
-    pgHost ||
     "";
   const port = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
   const user = process.env.PGUSER || process.env.POSTGRES_USER || "postgres";
@@ -73,11 +61,12 @@ export function isSslDisabled(url: string): boolean {
   try {
     const u = new URL(url);
     const host = u.hostname;
+    // Only disable SSL for truly internal/local connections
     return (
-      host === "helium" ||
-      host.endsWith(".helium") ||
       host === "localhost" ||
       host === "127.0.0.1" ||
+      host === "helium" ||
+      host.endsWith(".helium") ||
       host.endsWith(".railway.internal") ||
       host === "railway.internal" ||
       u.searchParams.get("sslmode") === "disable"
