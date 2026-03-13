@@ -16,13 +16,21 @@ import {
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, desc, isNull } from "drizzle-orm";
 import pg from "pg";
-import { getDbUrl, isSslDisabled } from "./db-url";
+import { getDbUrl, isSslDisabled, parseDbUrl } from "./db-url";
 
 const dbUrl = getDbUrl();
+const sslDisabled = isSslDisabled(dbUrl);
+const parsed = parseDbUrl(dbUrl);
+
+console.log(`[db] Connecting to host=${parsed.host} port=${parsed.port} db=${parsed.database} ssl=${sslDisabled ? "disabled" : "enabled"}`);
 
 export const pool = new pg.Pool({
-  connectionString: dbUrl,
-  ssl: isSslDisabled(dbUrl) ? false : { rejectUnauthorized: false },
+  host: parsed.host,
+  port: parsed.port,
+  user: parsed.user,
+  password: parsed.password,
+  database: parsed.database,
+  ssl: sslDisabled ? false : { rejectUnauthorized: false },
   max: 10,
   connectionTimeoutMillis: 15000,
   idleTimeoutMillis: 10000,
@@ -114,8 +122,8 @@ export class DatabaseStorage implements IStorage {
       .update(attendance)
       .set({
         signOutTime: new Date(),
-        signOutLat: lat ?? null,
         signOutLng: lng ?? null,
+        signOutLat: lat ?? null,
       })
       .where(eq(attendance.id, attendanceId))
       .returning();
@@ -146,7 +154,6 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(attendance.userId, users.id))
       .where(eq(attendance.date, date))
       .orderBy(desc(attendance.signInTime));
-
     return rows.map((r) => ({ ...r.a, user: r.u ?? undefined }));
   }
 
@@ -177,7 +184,6 @@ export class DatabaseStorage implements IStorage {
       .from(feedEntries)
       .leftJoin(users, eq(feedEntries.userId, users.id))
       .orderBy(desc(feedEntries.createdAt));
-
     return rows.map((r) => ({ ...r.f, user: r.u ?? undefined }));
   }
 
@@ -193,7 +199,6 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(chatMessages.userId, users.id))
       .orderBy(desc(chatMessages.createdAt))
       .limit(limit);
-
     return rows.map((r) => ({ ...r.m, user: r.u ?? undefined })).reverse();
   }
 }

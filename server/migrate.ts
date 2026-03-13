@@ -1,5 +1,5 @@
 import pg from "pg";
-import { getDbUrl, isSslDisabled } from "./db-url";
+import { getDbUrl, isSslDisabled, parseDbUrl } from "./db-url";
 
 function maskUrl(url: string): string {
   try {
@@ -19,11 +19,17 @@ export async function runMigrations() {
   }
 
   const sslDisabled = isSslDisabled(dbUrl);
+  const parsed = parseDbUrl(dbUrl);
+
   console.log(`[migrate] Connecting to: ${maskUrl(dbUrl)}`);
-  console.log(`[migrate] SSL: ${sslDisabled ? "disabled (internal/local)" : "enabled"}`);
+  console.log(`[migrate] SSL: ${sslDisabled ? "disabled" : "enabled"}`);
 
   const client = new pg.Client({
-    connectionString: dbUrl,
+    host: parsed.host,
+    port: parsed.port,
+    user: parsed.user,
+    password: parsed.password,
+    database: parsed.database,
     connectionTimeoutMillis: 20000,
     ssl: sslDisabled ? false : { rejectUnauthorized: false },
   });
@@ -86,7 +92,7 @@ export async function runMigrations() {
     console.log("[migrate] All tables created/verified successfully");
   } catch (err: any) {
     console.error(`[migrate] Connection failed: ${err.message}`);
-    console.error(`[migrate] URL attempted: ${maskUrl(dbUrl)}`);
+    console.error(`[migrate] Host: ${parsed.host}:${parsed.port} DB: ${parsed.database}`);
     throw err;
   } finally {
     try { await client.end(); } catch {}

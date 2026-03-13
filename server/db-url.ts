@@ -1,5 +1,28 @@
+export interface ParsedDbUrl {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+}
+
+export function parseDbUrl(url: string): ParsedDbUrl {
+  try {
+    const u = new URL(url);
+    return {
+      host: u.hostname,
+      port: parseInt(u.port || "5432", 10),
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: u.pathname.replace(/^\//, "").split("?")[0],
+    };
+  } catch {
+    return { host: "localhost", port: 5432, user: "postgres", password: "", database: "postgres" };
+  }
+}
+
 export function getDbUrl(): string {
-  // Railway provides DATABASE_PRIVATE_URL for internal connections (preferred, no SSL needed)
+  // Railway provides DATABASE_PRIVATE_URL for internal connections
   const privateUrl = process.env.DATABASE_PRIVATE_URL || "";
   if (privateUrl && privateUrl.includes("://")) {
     console.log("[db] Using DATABASE_PRIVATE_URL (Railway internal)");
