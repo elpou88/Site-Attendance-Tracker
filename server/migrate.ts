@@ -1,19 +1,20 @@
 import pg from "pg";
+import { getDbUrl, isSslDisabled } from "./db-url";
 
 export async function runMigrations() {
-  const dbUrl = process.env.DATABASE_URL;
+  const dbUrl = getDbUrl();
 
   if (!dbUrl) {
-    console.log("[migrate] No DATABASE_URL set, skipping migrations");
+    console.log("[migrate] No database URL found, skipping migrations");
     return;
   }
 
-  const isInternal = dbUrl.includes("helium") || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") || dbUrl.includes(".internal");
+  console.log("[migrate] Connecting to database...");
 
   const client = new pg.Client({
     connectionString: dbUrl,
     connectionTimeoutMillis: 10000,
-    ssl: isInternal ? false : { rejectUnauthorized: false },
+    ssl: isSslDisabled(dbUrl) ? false : { rejectUnauthorized: false },
   });
 
   try {

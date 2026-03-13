@@ -16,13 +16,13 @@ import {
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, desc, isNull } from "drizzle-orm";
 import pg from "pg";
+import { getDbUrl, isSslDisabled } from "./db-url";
 
-const dbUrl = process.env.DATABASE_URL || "";
-const isInternal = dbUrl.includes(".internal") || dbUrl.includes("helium") || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
+const dbUrl = getDbUrl();
 
 export const pool = new pg.Pool({
   connectionString: dbUrl,
-  ssl: isInternal ? false : { rejectUnauthorized: false },
+  ssl: isSslDisabled(dbUrl) ? false : { rejectUnauthorized: false },
   connectionTimeoutMillis: 10000,
 });
 
