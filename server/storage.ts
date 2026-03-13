@@ -125,10 +125,7 @@ export class DatabaseStorage implements IStorage {
   async updateAttendanceLocation(attendanceId: string, lat: number, lng: number): Promise<Attendance | undefined> {
     const [record] = await db
       .update(attendance)
-      .set({
-        signInLat: lat,
-        signInLng: lng,
-      })
+      .set({ signInLat: lat, signInLng: lng })
       .where(eq(attendance.id, attendanceId))
       .returning();
     return record;
@@ -143,19 +140,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAttendanceByDate(date: string): Promise<(Attendance & { user?: User })[]> {
-    const records = await db
-      .select()
+    const rows = await db
+      .select({ a: attendance, u: users })
       .from(attendance)
+      .leftJoin(users, eq(attendance.userId, users.id))
       .where(eq(attendance.date, date))
       .orderBy(desc(attendance.signInTime));
-    
-    const enriched = await Promise.all(
-      records.map(async (r) => {
-        const user = await this.getUser(r.userId);
-        return { ...r, user };
-      })
-    );
-    return enriched;
+
+    return rows.map((r) => ({ ...r.a, user: r.u ?? undefined }));
   }
 
   async getAttendanceByUser(userId: string): Promise<Attendance[]> {
@@ -180,18 +172,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllFeedEntries(): Promise<(FeedEntry & { user?: User })[]> {
-    const entries = await db
-      .select()
+    const rows = await db
+      .select({ f: feedEntries, u: users })
       .from(feedEntries)
+      .leftJoin(users, eq(feedEntries.userId, users.id))
       .orderBy(desc(feedEntries.createdAt));
-    
-    const enriched = await Promise.all(
-      entries.map(async (e) => {
-        const user = await this.getUser(e.userId);
-        return { ...e, user };
-      })
-    );
-    return enriched;
+
+    return rows.map((r) => ({ ...r.f, user: r.u ?? undefined }));
   }
 
   async createChatMessage(msg: InsertChatMessage): Promise<ChatMessage> {
@@ -200,19 +187,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatMessages(limit = 100): Promise<(ChatMessage & { user?: User })[]> {
-    const messages = await db
-      .select()
+    const rows = await db
+      .select({ m: chatMessages, u: users })
       .from(chatMessages)
+      .leftJoin(users, eq(chatMessages.userId, users.id))
       .orderBy(desc(chatMessages.createdAt))
       .limit(limit);
 
-    const enriched = await Promise.all(
-      messages.map(async (m) => {
-        const user = await this.getUser(m.userId);
-        return { ...m, user };
-      })
-    );
-    return enriched.reverse();
+    return rows.map((r) => ({ ...r.m, user: r.u ?? undefined })).reverse();
   }
 }
 
