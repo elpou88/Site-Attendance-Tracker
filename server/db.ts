@@ -3,13 +3,15 @@ import pkg from "pg"
 
 const { Pool } = pkg
 
-const dbUrl = process.env.RAILWAY_DATABASE_URL || process.env.DATABASE_URL || "";
+// Use Replit's built-in database (reliable, already configured)
+// RAILWAY_DATABASE_URL kept as optional override if ever accessible
+const dbUrl = process.env.DATABASE_URL || "";
 
 if (!dbUrl) {
-  throw new Error("No database URL configured. Set RAILWAY_DATABASE_URL.");
+  throw new Error("No DATABASE_URL configured.");
 }
 
-const isInternal = dbUrl.includes(".internal") || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") || dbUrl.includes("helium");
+const isInternal = dbUrl.includes("helium") || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") || dbUrl.includes(".internal");
 
 const pool = new Pool({
   connectionString: dbUrl,
