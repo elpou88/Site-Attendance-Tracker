@@ -39,6 +39,7 @@ export function isSslDisabled(url: string): boolean {
     url.includes("helium") ||
     url.includes(".internal") ||
     url.includes("railway.internal") ||
+    url.includes("rlwy.net") ||
     url.includes("localhost") ||
     url.includes("127.0.0.1") ||
     url.includes("sslmode=disable")
