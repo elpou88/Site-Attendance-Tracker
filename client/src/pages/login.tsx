@@ -23,8 +23,8 @@ export default function LoginPage() {
       await login(username, password);
     } catch (err: any) {
       toast({
-        title: "Login Failed",
-        description: err.message || "Invalid username or password",
+        title: "Error al iniciar sesión",
+        description: err.message || "Usuario o contraseña incorrectos",
         variant: "destructive",
       });
     } finally {
@@ -43,38 +43,38 @@ export default function LoginPage() {
             data-testid="img-logo"
           />
           <h1 className="text-xl font-bold tracking-tight" data-testid="text-app-title">
-            Worker Portal
+            Portal del Trabajador
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Sign in to manage your daily attendance and updates
+            Inicia sesión para registrar tu asistencia y actualizaciones diarias
           </p>
         </div>
 
         <Card>
           <CardHeader className="pb-4">
-            <h2 className="text-lg font-semibold text-center">Worker Sign In</h2>
+            <h2 className="text-lg font-semibold text-center">Acceso de Trabajador</h2>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Usuario</Label>
                 <Input
                   id="username"
                   data-testid="input-username"
-                  placeholder="Enter your username"
+                  placeholder="Introduce tu usuario"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     data-testid="input-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="Introduce tu contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
@@ -100,12 +100,12 @@ export default function LoginPage() {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Signing in...
+                    Entrando...
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <LogIn className="w-4 h-4" />
-                    Sign In
+                    Entrar
                   </span>
                 )}
               </Button>
@@ -114,7 +114,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Contact your site manager for login credentials
+          Contacta a tu encargado de obra para obtener tus credenciales
         </p>
       </div>
     </div>

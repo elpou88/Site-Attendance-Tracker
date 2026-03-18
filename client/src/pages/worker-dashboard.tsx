@@ -16,7 +16,6 @@ import {
   Send,
   Clock,
   FileText,
-  ImageIcon,
   Navigation,
   RefreshCw,
   MapPinOff,
@@ -39,7 +38,7 @@ function useGpsLocation() {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
         setStatus("unavailable");
-        setErrorMessage("GPS is not supported on this device");
+        setErrorMessage("El GPS no está disponible en este dispositivo");
         resolve(null);
         return;
       }
@@ -60,19 +59,19 @@ function useGpsLocation() {
           switch (err.code) {
             case err.PERMISSION_DENIED:
               setStatus("denied");
-              setErrorMessage("Location access denied. Please enable GPS in your browser settings.");
+              setErrorMessage("Acceso a ubicación denegado. Activa el GPS en la configuración del navegador.");
               break;
             case err.POSITION_UNAVAILABLE:
               setStatus("unavailable");
-              setErrorMessage("GPS signal unavailable. Please try again outside or in a different location.");
+              setErrorMessage("Señal GPS no disponible. Intenta fuera o en otro lugar.");
               break;
             case err.TIMEOUT:
               setStatus("error");
-              setErrorMessage("Location request timed out. Please try again.");
+              setErrorMessage("La solicitud de ubicación ha caducado. Inténtalo de nuevo.");
               break;
             default:
               setStatus("error");
-              setErrorMessage("Unable to get location. Please try again.");
+              setErrorMessage("No se pudo obtener la ubicación. Inténtalo de nuevo.");
           }
           resolve(null);
         },
@@ -97,7 +96,7 @@ function GpsStatusDisplay({
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="gps-loading">
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        <span>Getting your location...</span>
+        <span>Obteniendo tu ubicación...</span>
       </div>
     );
   }
@@ -116,7 +115,7 @@ function GpsStatusDisplay({
       <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="gps-success">
         <MapPin className="w-3.5 h-3.5 text-green-600 shrink-0" />
         <span>
-          Location: {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
+          Ubicación: {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
         </span>
         <a
           href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
@@ -126,7 +125,7 @@ function GpsStatusDisplay({
           data-testid="link-view-map"
         >
           <ExternalLink className="w-3 h-3" />
-          Map
+          Mapa
         </a>
       </div>
     );
@@ -135,7 +134,7 @@ function GpsStatusDisplay({
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="gps-idle">
       <Navigation className="w-3.5 h-3.5" />
-      <span>GPS location will be captured when you sign in</span>
+      <span>Se registrará tu ubicación GPS al fichar la entrada</span>
     </div>
   );
 }
@@ -209,10 +208,10 @@ export default function WorkerDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
       toast({
-        title: "Signed In",
+        title: "Entrada registrada",
         description: gps.location
-          ? "You have been signed in with your GPS location."
-          : "You have been signed in (GPS location unavailable).",
+          ? "Has fichado la entrada con tu ubicación GPS."
+          : "Has fichado la entrada (GPS no disponible).",
       });
     },
     onError: (err: any) => {
@@ -232,10 +231,10 @@ export default function WorkerDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
       toast({
-        title: "Signed Out",
+        title: "Salida registrada",
         description: gps.location
-          ? "You have been signed out with your GPS location recorded."
-          : "You have been signed out (GPS location unavailable).",
+          ? "Has fichado la salida con tu ubicación GPS."
+          : "Has fichado la salida (GPS no disponible).",
       });
     },
     onError: (err: any) => {
@@ -247,7 +246,7 @@ export default function WorkerDashboard() {
     mutationFn: async () => {
       const loc = await gps.requestLocation();
       if (!loc) {
-        throw new Error("Unable to get GPS location");
+        throw new Error("No se pudo obtener la ubicación GPS");
       }
       const res = await apiRequest("POST", "/api/attendance/update-location", {
         lat: loc.lat,
@@ -257,7 +256,7 @@ export default function WorkerDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
-      toast({ title: "Location Updated", description: "Your GPS location has been updated." });
+      toast({ title: "Ubicación actualizada", description: "Tu ubicación GPS ha sido actualizada." });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -274,7 +273,7 @@ export default function WorkerDashboard() {
         body: formData,
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to post update");
+      if (!res.ok) throw new Error("Error al publicar la actualización");
       return res.json();
     },
     onSuccess: () => {
@@ -282,7 +281,7 @@ export default function WorkerDashboard() {
       setNote("");
       setSelectedFile(null);
       setPreviewUrl(null);
-      toast({ title: "Update Posted", description: "Your daily update has been posted." });
+      toast({ title: "Actualización publicada", description: "Tu actualización diaria ha sido enviada." });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -314,12 +313,12 @@ export default function WorkerDashboard() {
               <p className="font-semibold text-sm leading-tight" data-testid="text-worker-name">
                 {user?.fullName}
               </p>
-              <p className="text-xs text-muted-foreground">Worker Portal</p>
+              <p className="text-xs text-muted-foreground">Portal del Trabajador</p>
             </div>
           </div>
           <Button variant="secondary" size="sm" onClick={() => logout()} data-testid="button-logout">
             <LogOut className="w-4 h-4 mr-1" />
-            Logout
+            Salir
           </Button>
         </div>
       </header>
@@ -330,7 +329,7 @@ export default function WorkerDashboard() {
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Navigation className="w-4 h-4 text-muted-foreground" />
-                <h2 className="font-semibold">Your Location</h2>
+                <h2 className="font-semibold">Tu Ubicación</h2>
               </div>
               <Button
                 variant="secondary"
@@ -344,7 +343,7 @@ export default function WorkerDashboard() {
                 ) : (
                   <RefreshCw className="w-3.5 h-3.5 mr-1" />
                 )}
-                {gps.status === "loading" ? "Getting..." : "Refresh GPS"}
+                {gps.status === "loading" ? "Obteniendo..." : "Actualizar GPS"}
               </Button>
             </div>
           </CardHeader>
@@ -362,10 +361,10 @@ export default function WorkerDashboard() {
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
-                <h2 className="font-semibold">Attendance</h2>
+                <h2 className="font-semibold">Asistencia</h2>
               </div>
               <Badge variant={isSignedIn ? "default" : "secondary"} data-testid="badge-status">
-                {isSignedIn ? "On Site" : "Off Site"}
+                {isSignedIn ? "En obra" : "Fuera de obra"}
               </Badge>
             </div>
           </CardHeader>
@@ -375,9 +374,9 @@ export default function WorkerDashboard() {
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                   <span>
-                    Signed in at{" "}
+                    Entrada registrada a las{" "}
                     <span className="font-medium">
-                      {format(new Date(activeAttendance.signInTime), "h:mm a")}
+                      {format(new Date(activeAttendance.signInTime), "HH:mm")}
                     </span>
                   </span>
                 </div>
@@ -386,7 +385,7 @@ export default function WorkerDashboard() {
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="w-3.5 h-3.5 text-green-600 shrink-0" />
                     <span>
-                      Recorded at: {activeAttendance.signInLat.toFixed(5)},{" "}
+                      Registrado en: {activeAttendance.signInLat.toFixed(5)},{" "}
                       {activeAttendance.signInLng?.toFixed(5)}
                     </span>
                     <a
@@ -397,13 +396,13 @@ export default function WorkerDashboard() {
                       data-testid="link-signin-map"
                     >
                       <ExternalLink className="w-3 h-3" />
-                      View on Map
+                      Ver en el mapa
                     </a>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPinOff className="w-3.5 h-3.5 shrink-0" />
-                    <span>No GPS location recorded at sign-in</span>
+                    <span>No se registró ubicación GPS al entrar</span>
                   </div>
                 )}
 
@@ -420,7 +419,7 @@ export default function WorkerDashboard() {
                   ) : (
                     <RefreshCw className="w-3.5 h-3.5 mr-1" />
                   )}
-                  {updateLocationMutation.isPending ? "Updating..." : "Update My Location"}
+                  {updateLocationMutation.isPending ? "Actualizando..." : "Actualizar Mi Ubicación"}
                 </Button>
               </div>
             )}
@@ -435,12 +434,12 @@ export default function WorkerDashboard() {
                 {signInMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Getting GPS & Signing In...
+                    Obteniendo GPS y fichando...
                   </>
                 ) : (
                   <>
                     <LogIn className="w-4 h-4 mr-2" />
-                    Sign In
+                    Fichar Entrada
                   </>
                 )}
               </Button>
@@ -454,12 +453,12 @@ export default function WorkerDashboard() {
                 {signOutMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Getting GPS & Signing Out...
+                    Obteniendo GPS y fichando...
                   </>
                 ) : (
                   <>
                     <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
+                    Fichar Salida
                   </>
                 )}
               </Button>
@@ -472,10 +471,10 @@ export default function WorkerDashboard() {
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4 text-muted-foreground" />
-                <h2 className="font-semibold">Team Chat</h2>
+                <h2 className="font-semibold">Chat del Equipo</h2>
               </div>
               <Badge variant="secondary" data-testid="badge-chat-count">
-                {chatMessages.length} messages
+                {chatMessages.length} mensajes
               </Badge>
             </div>
           </CardHeader>
@@ -487,7 +486,7 @@ export default function WorkerDashboard() {
             >
               {chatMessages.length === 0 && (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
+                  <p className="text-sm text-muted-foreground">Sin mensajes aún. ¡Inicia la conversación!</p>
                 </div>
               )}
               {chatMessages.map((msg) => {
@@ -501,13 +500,13 @@ export default function WorkerDashboard() {
                     <div className={`max-w-[80%] rounded-lg px-3 py-2 ${isMe ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                       {!isMe && (
                         <p className="text-xs font-semibold mb-0.5" data-testid={`chat-sender-${msg.id}`}>
-                          {msg.user?.fullName || "Unknown"}
+                          {msg.user?.fullName || "Desconocido"}
                         </p>
                       )}
                       <p className="text-sm" data-testid={`chat-text-${msg.id}`}>{msg.message}</p>
                     </div>
                     <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
-                      {format(new Date(msg.createdAt), "h:mm a")}
+                      {format(new Date(msg.createdAt), "HH:mm")}
                     </span>
                   </div>
                 );
@@ -524,7 +523,7 @@ export default function WorkerDashboard() {
               className="flex gap-2"
             >
               <Input
-                placeholder="Type a message..."
+                placeholder="Escribe un mensaje..."
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 disabled={chatMutation.isPending}
@@ -546,12 +545,12 @@ export default function WorkerDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-muted-foreground" />
-              <h2 className="font-semibold">Post Daily Update</h2>
+              <h2 className="font-semibold">Publicar Actualización Diaria</h2>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <Textarea
-              placeholder="What did you work on today? Describe your progress..."
+              placeholder="¿En qué trabajaste hoy? Describe tu progreso..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="resize-none"
@@ -564,7 +563,7 @@ export default function WorkerDashboard() {
                   <Button variant="secondary" size="sm" asChild>
                     <span>
                       <Camera className="w-4 h-4 mr-1" />
-                      {selectedFile ? "Change Photo" : "Add Photo"}
+                      {selectedFile ? "Cambiar foto" : "Añadir foto"}
                     </span>
                   </Button>
                 </label>
@@ -587,14 +586,14 @@ export default function WorkerDashboard() {
                 data-testid="button-post-update"
               >
                 <Send className="w-4 h-4 mr-1" />
-                {feedMutation.isPending ? "Posting..." : "Post"}
+                {feedMutation.isPending ? "Publicando..." : "Publicar"}
               </Button>
             </div>
             {previewUrl && (
               <div className="relative rounded-md">
                 <img
                   src={previewUrl}
-                  alt="Preview"
+                  alt="Vista previa"
                   className="w-full max-h-48 object-cover rounded-md"
                   data-testid="img-preview"
                 />
@@ -608,7 +607,7 @@ export default function WorkerDashboard() {
                   }}
                   data-testid="button-remove-photo"
                 >
-                  Remove
+                  Quitar
                 </Button>
               </div>
             )}
@@ -618,42 +617,28 @@ export default function WorkerDashboard() {
         {feedEntries.length > 0 && (
           <div className="space-y-3">
             <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-              Your Updates
+              Tus Actualizaciones
             </h2>
             {feedEntries.map((entry) => (
               <Card key={entry.id}>
                 <CardContent className="pt-4 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(entry.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                      {format(new Date(entry.createdAt), "d MMM, HH:mm")}
                     </span>
                   </div>
-                  {entry.note && (
-                    <p className="text-sm leading-relaxed" data-testid={`text-feed-note-${entry.id}`}>
-                      {entry.note}
-                    </p>
-                  )}
+                  {entry.note && <p className="text-sm leading-relaxed">{entry.note}</p>}
                   {entry.imageUrl && (
                     <img
                       src={entry.imageUrl}
-                      alt="Work update"
+                      alt="Actualización de trabajo"
                       className="w-full rounded-md object-cover max-h-64"
-                      data-testid={`img-feed-${entry.id}`}
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                     />
                   )}
                 </CardContent>
               </Card>
             ))}
-          </div>
-        )}
-
-        {feedEntries.length === 0 && (
-          <div className="text-center py-8">
-            <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-sm text-muted-foreground">
-              No updates yet. Post your first daily update above!
-            </p>
           </div>
         )}
       </main>

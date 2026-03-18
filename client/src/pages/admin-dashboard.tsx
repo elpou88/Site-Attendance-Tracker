@@ -104,7 +104,7 @@ function ContractDialog({ worker, jobSites }: { worker: SafeUser; jobSites: JobS
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
-      toast({ title: "Contract Updated", description: `Contract details for ${worker.fullName} saved.` });
+      toast({ title: "Contrato actualizado", description: `Datos de contrato de ${worker.fullName} guardados.` });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -123,12 +123,12 @@ function ContractDialog({ worker, jobSites }: { worker: SafeUser; jobSites: JobS
         <div className="bg-muted/50 rounded-md p-3 text-center">
           <HeartPulse className="w-4 h-4 mx-auto text-red-500 mb-1" />
           <p className="text-lg font-bold">{sickDaysLeft}</p>
-          <p className="text-xs text-muted-foreground">Sick Days Left</p>
+          <p className="text-xs text-muted-foreground">Días de baja restantes</p>
         </div>
         <div className="bg-muted/50 rounded-md p-3 text-center">
           <Palmtree className="w-4 h-4 mx-auto text-green-600 mb-1" />
           <p className="text-lg font-bold">{holidayDaysLeft}</p>
-          <p className="text-xs text-muted-foreground">Holiday Days Left</p>
+          <p className="text-xs text-muted-foreground">Días de vacaciones restantes</p>
         </div>
       </div>
 
@@ -136,37 +136,33 @@ function ContractDialog({ worker, jobSites }: { worker: SafeUser; jobSites: JobS
         <div className={`rounded-md p-3 flex items-center gap-2 text-sm ${contractExpired ? "bg-red-50 text-red-700 border border-red-200" : contractExpiring ? "bg-orange-50 text-orange-700 border border-orange-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
           <AlertTriangle className="w-4 h-4 shrink-0" />
           {contractExpired
-            ? <span>Contract expired {Math.abs(contractDaysLeft)} days ago</span>
+            ? <span>Contrato expirado hace {Math.abs(contractDaysLeft)} días</span>
             : contractExpiring
-            ? <span>Contract expires in {contractDaysLeft} days</span>
-            : <span>{contractDaysLeft} days remaining on contract</span>}
+            ? <span>El contrato vence en {contractDaysLeft} días</span>
+            : <span>{contractDaysLeft} días restantes en el contrato</span>}
         </div>
       )}
 
       <div className="space-y-2">
-        <Label>Contract Type</Label>
+        <Label>Tipo de contrato</Label>
         <Select value={contractType} onValueChange={setContractType}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select contract type" />
-          </SelectTrigger>
+          <SelectTrigger><SelectValue placeholder="Selecciona tipo de contrato" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="full-time">Full-Time</SelectItem>
-            <SelectItem value="part-time">Part-Time</SelectItem>
-            <SelectItem value="temporary">Temporary</SelectItem>
-            <SelectItem value="contract">Contract</SelectItem>
-            <SelectItem value="apprentice">Apprentice</SelectItem>
+            <SelectItem value="full-time">Tiempo completo</SelectItem>
+            <SelectItem value="part-time">Tiempo parcial</SelectItem>
+            <SelectItem value="temporary">Temporal</SelectItem>
+            <SelectItem value="contract">Por obra</SelectItem>
+            <SelectItem value="apprentice">Aprendiz</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-2">
-        <Label>Assigned Job Site</Label>
+        <Label>Obra asignada</Label>
         <Select value={jobSiteId} onValueChange={setJobSiteId}>
-          <SelectTrigger>
-            <SelectValue placeholder="No site assigned" />
-          </SelectTrigger>
+          <SelectTrigger><SelectValue placeholder="Sin obra asignada" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No site assigned</SelectItem>
+            <SelectItem value="">Sin obra asignada</SelectItem>
             {jobSites.map((s) => (
               <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
             ))}
@@ -175,53 +171,46 @@ function ContractDialog({ worker, jobSites }: { worker: SafeUser; jobSites: JobS
       </div>
 
       <div className="space-y-2">
-        <Label>Hourly Rate (£)</Label>
-        <Input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="e.g. 14.50"
-          value={hourlyRate}
-          onChange={(e) => setHourlyRate(e.target.value)}
-        />
+        <Label>Tarifa por hora (£)</Label>
+        <Input type="number" min="0" step="0.01" placeholder="ej. 14.50" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label>Contract Start Date</Label>
+          <Label>Fecha inicio contrato</Label>
           <Input type="date" value={contractStartDate} onChange={(e) => setContractStartDate(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label>Contract Expiry Date</Label>
+          <Label>Fecha fin contrato</Label>
           <Input type="date" value={contractExpiryDate} onChange={(e) => setContractExpiryDate(e.target.value)} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label>Total Sick Days</Label>
+          <Label>Total días de baja</Label>
           <Input type="number" min="0" value={sickDaysTotal} onChange={(e) => setSickDaysTotal(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label>Sick Days Used</Label>
+          <Label>Días de baja usados</Label>
           <Input type="number" min="0" value={sickDaysUsed} onChange={(e) => setSickDaysUsed(e.target.value)} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label>Total Holiday Days</Label>
+          <Label>Total días de vacaciones</Label>
           <Input type="number" min="0" value={holidayDaysTotal} onChange={(e) => setHolidayDaysTotal(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label>Holiday Days Used</Label>
+          <Label>Vacaciones usadas</Label>
           <Input type="number" min="0" value={holidayDaysUsed} onChange={(e) => setHolidayDaysUsed(e.target.value)} />
         </div>
       </div>
 
       <Button className="w-full" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
         <Save className="w-4 h-4 mr-1" />
-        {updateMutation.isPending ? "Saving..." : "Save Contract Details"}
+        {updateMutation.isPending ? "Guardando..." : "Guardar datos del contrato"}
       </Button>
     </div>
   );
@@ -266,7 +255,6 @@ export default function AdminDashboard() {
 
   const { data: jobSites = [] } = useQuery<JobSite[]>({ queryKey: ["/api/job-sites"] });
 
-
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "granted") {
       setNotifEnabled(true);
@@ -282,16 +270,11 @@ export default function AdminDashboard() {
     }
     for (const key of currentIds) {
       if (!prevAttendanceRef.current.has(key)) {
-        const record = todayAttendance.find(
-          (a) => `${a.id}-${a.signOutTime || "in"}` === key
-        );
+        const record = todayAttendance.find((a) => `${a.id}-${a.signOutTime || "in"}` === key);
         if (record) {
-          const name = record.user?.fullName || "A worker";
-          const action = record.signOutTime ? "signed out" : "signed in";
-          new Notification(`Resolve Construction`, {
-            body: `${name} has ${action}`,
-            icon: "/favicon.ico",
-          });
+          const name = record.user?.fullName || "Un trabajador";
+          const action = record.signOutTime ? "ha fichado la salida" : "ha fichado la entrada";
+          new Notification("Resolve Construction", { body: `${name} ${action}`, icon: "/favicon.ico" });
         }
       }
     }
@@ -300,20 +283,16 @@ export default function AdminDashboard() {
 
   const enableNotifications = async () => {
     if (!("Notification" in window)) {
-      toast({ title: "Not supported", description: "Your browser doesn't support notifications.", variant: "destructive" });
+      toast({ title: "No compatible", description: "Tu navegador no soporta notificaciones.", variant: "destructive" });
       return;
     }
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
       setNotifEnabled(true);
-      toast({ title: "Notifications enabled", description: "You'll be alerted when workers sign in or out." });
+      toast({ title: "Notificaciones activadas", description: "Recibirás alertas cuando los trabajadores fichen entrada o salida." });
     } else {
-      toast({ title: "Permission denied", description: "Enable notifications in your browser settings.", variant: "destructive" });
+      toast({ title: "Permiso denegado", description: "Activa las notificaciones en la configuración del navegador.", variant: "destructive" });
     }
-  };
-
-  const handleExport = () => {
-    window.open(`/api/export/attendance?from=${exportFrom}&to=${exportTo}`, "_blank");
   };
 
   const createWorkerMutation = useMutation({
@@ -325,7 +304,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
       setNewWorkerOpen(false);
       setFullName(""); setUsername(""); setPassword("");
-      toast({ title: "Worker Created", description: "New worker added successfully." });
+      toast({ title: "Trabajador creado", description: "El nuevo trabajador ha sido añadido correctamente." });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -336,7 +315,7 @@ export default function AdminDashboard() {
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/workers/${id}`); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
-      toast({ title: "Worker Removed" });
+      toast({ title: "Trabajador eliminado" });
     },
   });
 
@@ -345,15 +324,15 @@ export default function AdminDashboard() {
       const form = new FormData();
       form.append("photo", file);
       const res = await fetch(`/api/workers/${id}/photo`, { method: "POST", body: form });
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) throw new Error("Error al subir la foto");
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
-      toast({ title: "Photo updated" });
+      toast({ title: "Foto actualizada" });
     },
     onError: (err: any) => {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+      toast({ title: "Error al subir", description: err.message, variant: "destructive" });
     },
   });
 
@@ -365,7 +344,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-sites"] });
       setNewSiteName(""); setNewSiteAddress("");
-      toast({ title: "Job site added" });
+      toast({ title: "Obra añadida" });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -376,7 +355,7 @@ export default function AdminDashboard() {
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/job-sites/${id}`); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-sites"] });
-      toast({ title: "Job site removed" });
+      toast({ title: "Obra eliminada" });
     },
   });
 
@@ -395,18 +374,17 @@ export default function AdminDashboard() {
   });
 
   const copyCredentials = () => {
-    navigator.clipboard.writeText(`Username: ${username}\nPassword: ${password}`);
-    toast({ title: "Copied", description: "Credentials copied to clipboard" });
+    navigator.clipboard.writeText(`Usuario: ${username}\nContraseña: ${password}`);
+    toast({ title: "Copiado", description: "Credenciales copiadas al portapapeles" });
   };
 
   const getContractBadge = (worker: SafeUser) => {
     if (!worker.contractExpiryDate) return null;
     const daysLeft = differenceInDays(parseISO(worker.contractExpiryDate), new Date());
-    if (daysLeft < 0) return <Badge variant="destructive" className="text-xs">Expired</Badge>;
-    if (daysLeft <= 30) return <Badge className="text-xs bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>;
+    if (daysLeft < 0) return <Badge variant="destructive" className="text-xs">Expirado</Badge>;
+    if (daysLeft <= 30) return <Badge className="text-xs bg-orange-500 hover:bg-orange-600">Vence pronto</Badge>;
     return null;
   };
-
 
   return (
     <div className="min-h-screen bg-background">
@@ -416,17 +394,17 @@ export default function AdminDashboard() {
             <img src={resolveLogoPath} alt="Resolve Construction" className="h-10 w-auto object-contain" />
             <div>
               <p className="font-semibold text-sm leading-tight">Resolve Construction</p>
-              <p className="text-xs text-muted-foreground">Admin Panel</p>
+              <p className="text-xs text-muted-foreground">Panel de Administración</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={notifEnabled ? undefined : enableNotifications} className={notifEnabled ? "text-green-600 border-green-300" : ""}>
               {notifEnabled ? <Bell className="w-4 h-4 mr-1" /> : <BellOff className="w-4 h-4 mr-1" />}
-              {notifEnabled ? "Alerts On" : "Enable Alerts"}
+              {notifEnabled ? "Alertas activadas" : "Activar alertas"}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => adminLogout()}>
               <LogOut className="w-4 h-4 mr-1" />
-              Exit Admin
+              Salir
             </Button>
           </div>
         </div>
@@ -438,13 +416,13 @@ export default function AdminDashboard() {
             {expiredContracts.map((w) => (
               <div key={w.id} className="flex items-center gap-1.5 text-sm text-red-700">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span><strong>{w.fullName}</strong>'s contract has expired</span>
+                <span>El contrato de <strong>{w.fullName}</strong> ha expirado</span>
               </div>
             ))}
             {expiringContracts.map((w) => (
               <div key={w.id} className="flex items-center gap-1.5 text-sm text-orange-700">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span><strong>{w.fullName}</strong>'s contract expires in {differenceInDays(parseISO(w.contractExpiryDate!), new Date())} days</span>
+                <span>El contrato de <strong>{w.fullName}</strong> vence en {differenceInDays(parseISO(w.contractExpiryDate!), new Date())} días</span>
               </div>
             ))}
           </div>
@@ -457,7 +435,7 @@ export default function AdminDashboard() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Workers</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Total trabajadores</p>
                   <p className="text-2xl font-bold mt-1">{workers.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-md bg-accent flex items-center justify-center">
@@ -470,7 +448,7 @@ export default function AdminDashboard() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">On Site Now</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">En obra ahora</p>
                   <p className="text-2xl font-bold mt-1 text-green-600">{activeWorkers.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-md bg-accent flex items-center justify-center">
@@ -483,7 +461,7 @@ export default function AdminDashboard() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Signed Out</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Han salido</p>
                   <p className="text-2xl font-bold mt-1">{completedWorkers.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-md bg-accent flex items-center justify-center">
@@ -496,7 +474,7 @@ export default function AdminDashboard() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Job Sites</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Obras activas</p>
                   <p className="text-2xl font-bold mt-1">{jobSites.length}</p>
                 </div>
                 <div className="w-10 h-10 rounded-md bg-accent flex items-center justify-center">
@@ -509,26 +487,26 @@ export default function AdminDashboard() {
 
         <Tabs defaultValue="attendance">
           <TabsList className="mb-4 flex-wrap h-auto gap-1">
-            <TabsTrigger value="attendance"><Clock className="w-4 h-4 mr-1" />Attendance</TabsTrigger>
-            <TabsTrigger value="workers"><Users className="w-4 h-4 mr-1" />Workers</TabsTrigger>
-            <TabsTrigger value="pay"><PoundSterling className="w-4 h-4 mr-1" />Pay</TabsTrigger>
-            <TabsTrigger value="sites"><Building2 className="w-4 h-4 mr-1" />Job Sites</TabsTrigger>
-            <TabsTrigger value="feed"><FileText className="w-4 h-4 mr-1" />Activity</TabsTrigger>
+            <TabsTrigger value="attendance"><Clock className="w-4 h-4 mr-1" />Asistencia</TabsTrigger>
+            <TabsTrigger value="workers"><Users className="w-4 h-4 mr-1" />Trabajadores</TabsTrigger>
+            <TabsTrigger value="pay"><PoundSterling className="w-4 h-4 mr-1" />Nóminas</TabsTrigger>
+            <TabsTrigger value="sites"><Building2 className="w-4 h-4 mr-1" />Obras</TabsTrigger>
+            <TabsTrigger value="feed"><FileText className="w-4 h-4 mr-1" />Actividad</TabsTrigger>
           </TabsList>
 
           <TabsContent value="attendance" className="space-y-4">
             <div className="flex flex-wrap items-end gap-3 p-4 bg-muted/40 rounded-lg border">
               <div className="space-y-1">
-                <Label className="text-xs">Export From</Label>
+                <Label className="text-xs">Exportar desde</Label>
                 <Input type="date" className="h-8 text-sm w-36" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">To</Label>
+                <Label className="text-xs">Hasta</Label>
                 <Input type="date" className="h-8 text-sm w-36" value={exportTo} onChange={(e) => setExportTo(e.target.value)} />
               </div>
-              <Button size="sm" variant="outline" onClick={handleExport}>
+              <Button size="sm" variant="outline" onClick={() => window.open(`/api/export/attendance?from=${exportFrom}&to=${exportTo}`, "_blank")}>
                 <Download className="w-4 h-4 mr-1" />
-                Export Excel
+                Exportar Excel
               </Button>
             </div>
 
@@ -536,7 +514,7 @@ export default function AdminDashboard() {
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-500" />
-                  Currently On Site ({activeWorkers.length})
+                  Actualmente en obra ({activeWorkers.length})
                 </h3>
                 {activeWorkers.map((record) => (
                   <Card key={record.id}>
@@ -545,9 +523,9 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-3">
                           {record.user && <WorkerAvatar worker={record.user as SafeUser} />}
                           <div>
-                            <p className="font-medium text-sm">{record.user?.fullName || "Unknown"}</p>
+                            <p className="font-medium text-sm">{record.user?.fullName || "Desconocido"}</p>
                             <p className="text-xs text-muted-foreground">
-                              Signed in at {format(new Date(record.signInTime), "h:mm a")}
+                              Entrada a las {format(new Date(record.signInTime), "HH:mm")}
                             </p>
                             {record.signInLat && (
                               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -558,13 +536,13 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="default">Active</Badge>
+                          <Badge variant="default">Activo</Badge>
                           {record.signInLat && (
                             <a href={`https://www.google.com/maps?q=${record.signInLat},${record.signInLng}`} target="_blank" rel="noopener noreferrer">
-                              <Button variant="secondary" size="sm"><MapPin className="w-3.5 h-3.5 mr-1" />View Map</Button>
+                              <Button variant="secondary" size="sm"><MapPin className="w-3.5 h-3.5 mr-1" />Ver mapa</Button>
                             </a>
                           )}
-                          {!record.signInLat && <Badge variant="secondary" className="text-xs"><MapPinOff className="w-3 h-3 mr-1" />No GPS</Badge>}
+                          {!record.signInLat && <Badge variant="secondary" className="text-xs"><MapPinOff className="w-3 h-3 mr-1" />Sin GPS</Badge>}
                         </div>
                       </div>
                     </CardContent>
@@ -577,7 +555,7 @@ export default function AdminDashboard() {
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-gray-400" />
-                  Completed Shift
+                  Turno completado
                 </h3>
                 {completedWorkers.map((record) => (
                   <Card key={record.id}>
@@ -586,12 +564,12 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-3">
                           {record.user && <WorkerAvatar worker={record.user as SafeUser} />}
                           <div>
-                            <p className="font-medium text-sm">{record.user?.fullName || "Unknown"}</p>
+                            <p className="font-medium text-sm">{record.user?.fullName || "Desconocido"}</p>
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(record.signInTime), "h:mm a")}
-                              {record.signOutTime && ` - ${format(new Date(record.signOutTime), "h:mm a")}`}
+                              {format(new Date(record.signInTime), "HH:mm")}
+                              {record.signOutTime && ` - ${format(new Date(record.signOutTime), "HH:mm")}`}
                               {record.signInTime && record.signOutTime && (
-                                <span className="ml-1 text-muted-foreground">
+                                <span className="ml-1">
                                   ({Math.round(((new Date(record.signOutTime).getTime() - new Date(record.signInTime).getTime()) / 3600000) * 10) / 10}h)
                                 </span>
                               )}
@@ -601,15 +579,15 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           {record.signInLat && (
                             <a href={`https://www.google.com/maps?q=${record.signInLat},${record.signInLng}`} target="_blank" rel="noopener noreferrer">
-                              <Button variant="secondary" size="sm"><MapPin className="w-3.5 h-3.5 mr-1" />In</Button>
+                              <Button variant="secondary" size="sm"><MapPin className="w-3.5 h-3.5 mr-1" />Entrada</Button>
                             </a>
                           )}
                           {record.signOutLat && (
                             <a href={`https://www.google.com/maps?q=${record.signOutLat},${record.signOutLng}`} target="_blank" rel="noopener noreferrer">
-                              <Button variant="secondary" size="sm"><MapPin className="w-3.5 h-3.5 mr-1" />Out</Button>
+                              <Button variant="secondary" size="sm"><MapPin className="w-3.5 h-3.5 mr-1" />Salida</Button>
                             </a>
                           )}
-                          <Badge variant="secondary">Completed</Badge>
+                          <Badge variant="secondary">Completado</Badge>
                         </div>
                       </div>
                     </CardContent>
@@ -621,45 +599,45 @@ export default function AdminDashboard() {
             {todayAttendance.length === 0 && (
               <div className="text-center py-12">
                 <Clock className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">No attendance records for today yet.</p>
+                <p className="text-sm text-muted-foreground">Sin registros de asistencia por hoy.</p>
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="workers" className="space-y-4">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Manage Workers</h3>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Gestión de trabajadores</h3>
               <Dialog open={newWorkerOpen} onOpenChange={setNewWorkerOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm"><UserPlus className="w-4 h-4 mr-1" />Add Worker</Button>
+                  <Button size="sm"><UserPlus className="w-4 h-4 mr-1" />Añadir trabajador</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>Add New Worker</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>Añadir nuevo trabajador</DialogTitle></DialogHeader>
                   <div className="space-y-4 pt-2">
                     <div className="space-y-2">
-                      <Label>Full Name</Label>
-                      <Input placeholder="e.g. John Smith" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                      <Label>Nombre completo</Label>
+                      <Input placeholder="ej. Juan García" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Username</Label>
-                      <Input placeholder="e.g. john.smith" value={username} onChange={(e) => setUsername(e.target.value)} />
+                      <Label>Usuario</Label>
+                      <Input placeholder="ej. juan.garcia" value={username} onChange={(e) => setUsername(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Password</Label>
-                      <Input placeholder="Set a password for the worker" value={password} onChange={(e) => setPassword(e.target.value)} />
+                      <Label>Contraseña</Label>
+                      <Input placeholder="Establece una contraseña" value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
                     {username && password && (
                       <div className="bg-muted rounded-md p-3 space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground">Share with worker:</p>
-                        <p className="text-sm font-mono">Username: {username}</p>
-                        <p className="text-sm font-mono">Password: {password}</p>
+                        <p className="text-xs font-medium text-muted-foreground">Compartir con el trabajador:</p>
+                        <p className="text-sm font-mono">Usuario: {username}</p>
+                        <p className="text-sm font-mono">Contraseña: {password}</p>
                         <Button variant="secondary" size="sm" className="mt-2" onClick={copyCredentials}>
-                          <Copy className="w-3.5 h-3.5 mr-1" />Copy
+                          <Copy className="w-3.5 h-3.5 mr-1" />Copiar
                         </Button>
                       </div>
                     )}
                     <Button className="w-full" disabled={!fullName || !username || !password || createWorkerMutation.isPending} onClick={() => createWorkerMutation.mutate()}>
-                      {createWorkerMutation.isPending ? "Creating..." : "Create Worker"}
+                      {createWorkerMutation.isPending ? "Creando..." : "Crear trabajador"}
                     </Button>
                   </div>
                 </DialogContent>
@@ -701,49 +679,49 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant={isActiveToday ? "default" : "secondary"}>{isActiveToday ? "On Site" : "Off Site"}</Badge>
+                        <Badge variant={isActiveToday ? "default" : "secondary"}>{isActiveToday ? "En obra" : "Fuera"}</Badge>
                         {worker.contractType && <Badge variant="outline" className="text-xs capitalize">{worker.contractType}</Badge>}
-                        {worker.hourlyRate && <Badge variant="outline" className="text-xs">£{worker.hourlyRate}/hr</Badge>}
+                        {worker.hourlyRate && <Badge variant="outline" className="text-xs">£{worker.hourlyRate}/h</Badge>}
                       </div>
                     </div>
 
                     {(worker.sickDaysTotal || worker.holidayDaysTotal || worker.contractExpiryDate) && (
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground border-t pt-2">
-                        {(worker.sickDaysTotal || 0) > 0 && <span className="flex items-center gap-1"><HeartPulse className="w-3 h-3 text-red-500" />Sick: {sickLeft}/{worker.sickDaysTotal}</span>}
-                        {(worker.holidayDaysTotal || 0) > 0 && <span className="flex items-center gap-1"><Palmtree className="w-3 h-3 text-green-600" />Holiday: {holidayLeft}/{worker.holidayDaysTotal}</span>}
-                        {worker.contractExpiryDate && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />Expires: {format(parseISO(worker.contractExpiryDate), "dd MMM yyyy")}</span>}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground border-t pt-2 flex-wrap">
+                        {(worker.sickDaysTotal || 0) > 0 && <span className="flex items-center gap-1"><HeartPulse className="w-3 h-3 text-red-500" />Baja: {sickLeft}/{worker.sickDaysTotal}</span>}
+                        {(worker.holidayDaysTotal || 0) > 0 && <span className="flex items-center gap-1"><Palmtree className="w-3 h-3 text-green-600" />Vacaciones: {holidayLeft}/{worker.holidayDaysTotal}</span>}
+                        {worker.contractExpiryDate && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />Vence: {format(parseISO(worker.contractExpiryDate), "dd/MM/yyyy")}</span>}
                       </div>
                     )}
 
                     <div className="flex items-center gap-2 border-t pt-2 flex-wrap">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="secondary" size="sm"><Briefcase className="w-3.5 h-3.5 mr-1" />Contract</Button>
+                          <Button variant="secondary" size="sm"><Briefcase className="w-3.5 h-3.5 mr-1" />Contrato</Button>
                         </DialogTrigger>
                         <DialogContent className="max-h-[85vh] overflow-y-auto">
-                          <DialogHeader><DialogTitle>{worker.fullName} - Contract</DialogTitle></DialogHeader>
+                          <DialogHeader><DialogTitle>{worker.fullName} - Contrato</DialogTitle></DialogHeader>
                           <ContractDialog worker={worker} jobSites={jobSites} />
                         </DialogContent>
                       </Dialog>
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="secondary" size="sm" onClick={() => setSelectedWorkerId(worker.id)}>
-                            <Eye className="w-3.5 h-3.5 mr-1" />History
+                            <Eye className="w-3.5 h-3.5 mr-1" />Historial
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-h-[80vh] overflow-y-auto">
-                          <DialogHeader><DialogTitle>{worker.fullName} - Attendance History</DialogTitle></DialogHeader>
+                          <DialogHeader><DialogTitle>{worker.fullName} - Historial de asistencia</DialogTitle></DialogHeader>
                           <div className="space-y-2 pt-2">
                             {workerAttendance.length === 0 ? (
-                              <p className="text-sm text-muted-foreground text-center py-4">No attendance records yet.</p>
+                              <p className="text-sm text-muted-foreground text-center py-4">Sin registros de asistencia aún.</p>
                             ) : (
                               workerAttendance.map((record) => (
                                 <div key={record.id} className="flex items-center justify-between gap-2 py-2 border-b last:border-0">
                                   <div>
                                     <p className="text-sm font-medium">{record.date}</p>
                                     <p className="text-xs text-muted-foreground">
-                                      {format(new Date(record.signInTime), "h:mm a")}
-                                      {record.signOutTime && ` - ${format(new Date(record.signOutTime), "h:mm a")}`}
+                                      {format(new Date(record.signInTime), "HH:mm")}
+                                      {record.signOutTime && ` - ${format(new Date(record.signOutTime), "HH:mm")}`}
                                       {record.signInTime && record.signOutTime && (
                                         <span className="ml-1">({Math.round(((new Date(record.signOutTime).getTime() - new Date(record.signInTime).getTime()) / 3600000) * 10) / 10}h)</span>
                                       )}
@@ -752,15 +730,15 @@ export default function AdminDashboard() {
                                   <div className="flex items-center gap-2">
                                     {record.signInLat && (
                                       <a href={`https://www.google.com/maps?q=${record.signInLat},${record.signInLng}`} target="_blank" rel="noopener noreferrer">
-                                        <Button variant="secondary" size="sm"><MapPin className="w-3 h-3 mr-1" />In</Button>
+                                        <Button variant="secondary" size="sm"><MapPin className="w-3 h-3 mr-1" />Entrada</Button>
                                       </a>
                                     )}
                                     {record.signOutLat && (
                                       <a href={`https://www.google.com/maps?q=${record.signOutLat},${record.signOutLng}`} target="_blank" rel="noopener noreferrer">
-                                        <Button variant="secondary" size="sm"><MapPin className="w-3 h-3 mr-1" />Out</Button>
+                                        <Button variant="secondary" size="sm"><MapPin className="w-3 h-3 mr-1" />Salida</Button>
                                       </a>
                                     )}
-                                    <Badge variant={record.signOutTime ? "secondary" : "default"}>{record.signOutTime ? "Done" : "Active"}</Badge>
+                                    <Badge variant={record.signOutTime ? "secondary" : "default"}>{record.signOutTime ? "Hecho" : "Activo"}</Badge>
                                   </div>
                                 </div>
                               ))
@@ -768,7 +746,7 @@ export default function AdminDashboard() {
                           </div>
                         </DialogContent>
                       </Dialog>
-                      <Button variant="secondary" size="icon" onClick={() => { if (confirm(`Remove ${worker.fullName}?`)) deleteWorkerMutation.mutate(worker.id); }}>
+                      <Button variant="secondary" size="icon" onClick={() => { if (confirm(`¿Eliminar a ${worker.fullName}?`)) deleteWorkerMutation.mutate(worker.id); }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -780,36 +758,33 @@ export default function AdminDashboard() {
             {workers.length === 0 && (
               <div className="text-center py-12">
                 <Users className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">No workers yet. Add your first worker above.</p>
+                <p className="text-sm text-muted-foreground">Sin trabajadores aún. Añade el primero arriba.</p>
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="pay" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Pay Calculator</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base">Calculadora de nóminas</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">From</Label>
+                    <Label className="text-xs">Desde</Label>
                     <Input type="date" className="h-8 text-sm w-36" value={payFrom} onChange={(e) => setPayFrom(e.target.value)} />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">To</Label>
+                    <Label className="text-xs">Hasta</Label>
                     <Input type="date" className="h-8 text-sm w-36" value={payTo} onChange={(e) => setPayTo(e.target.value)} />
                   </div>
                   <Button size="sm" variant="outline" onClick={() => window.open(`/api/export/attendance?from=${payFrom}&to=${payTo}`, "_blank")}>
-                    <Download className="w-4 h-4 mr-1" />Export This Period
+                    <Download className="w-4 h-4 mr-1" />Exportar periodo
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Set hourly rates on each worker via the Contract button in the Workers tab. Pay is calculated from completed shifts only.</p>
+                <p className="text-xs text-muted-foreground">Establece la tarifa por hora de cada trabajador en su ficha de contrato. El pago se calcula solo con turnos completados.</p>
               </CardContent>
             </Card>
 
             {workers.map((worker) => {
-              const records = workerAttendance.filter((r) => r.userId === worker.id);
               const completed = todayAttendance.filter((a) => a.userId === worker.id && a.signOutTime);
               const totalHoursToday = completed.reduce((sum, r) => {
                 if (!r.signOutTime) return sum;
@@ -826,13 +801,13 @@ export default function AdminDashboard() {
                         <div>
                           <p className="font-medium text-sm">{worker.fullName}</p>
                           <p className="text-xs text-muted-foreground">
-                            {worker.hourlyRate ? `£${worker.hourlyRate}/hr` : "No rate set"}
+                            {worker.hourlyRate ? `£${worker.hourlyRate}/h` : "Sin tarifa"}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold">£{payToday.toFixed(2)}</p>
-                        <p className="text-xs text-muted-foreground">{Math.round(totalHoursToday * 10) / 10}h today</p>
+                        <p className="text-xs text-muted-foreground">{Math.round(totalHoursToday * 10) / 10}h hoy</p>
                       </div>
                     </div>
                   </CardContent>
@@ -843,26 +818,26 @@ export default function AdminDashboard() {
             {workers.every((w) => !w.hourlyRate) && (
               <div className="text-center py-8">
                 <PoundSterling className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">Set hourly rates on workers to see pay calculations here.</p>
+                <p className="text-sm text-muted-foreground">Establece la tarifa por hora en cada trabajador para ver los cálculos aquí.</p>
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="sites" className="space-y-4">
             <Card>
-              <CardHeader><CardTitle className="text-base">Add Job Site</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">Añadir obra</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2">
-                  <Label>Site Name</Label>
-                  <Input placeholder="e.g. City Centre Office" value={newSiteName} onChange={(e) => setNewSiteName(e.target.value)} />
+                  <Label>Nombre de la obra</Label>
+                  <Input placeholder="ej. Edificio Centro Ciudad" value={newSiteName} onChange={(e) => setNewSiteName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Address (optional)</Label>
-                  <Input placeholder="e.g. 123 Main Street" value={newSiteAddress} onChange={(e) => setNewSiteAddress(e.target.value)} />
+                  <Label>Dirección (opcional)</Label>
+                  <Input placeholder="ej. Calle Mayor 123" value={newSiteAddress} onChange={(e) => setNewSiteAddress(e.target.value)} />
                 </div>
                 <Button className="w-full" disabled={!newSiteName || createSiteMutation.isPending} onClick={() => createSiteMutation.mutate()}>
                   <Plus className="w-4 h-4 mr-1" />
-                  {createSiteMutation.isPending ? "Adding..." : "Add Site"}
+                  {createSiteMutation.isPending ? "Añadiendo..." : "Añadir obra"}
                 </Button>
               </CardContent>
             </Card>
@@ -880,15 +855,14 @@ export default function AdminDashboard() {
                         <div>
                           <p className="font-medium text-sm">{site.name}</p>
                           {site.address && <p className="text-xs text-muted-foreground">{site.address}</p>}
-                          {assignedWorkers.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Workers: {assignedWorkers.map((w) => w.fullName).join(", ")}
-                            </p>
-                          )}
-                          {assignedWorkers.length === 0 && <p className="text-xs text-muted-foreground mt-1">No workers assigned</p>}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {assignedWorkers.length > 0
+                              ? `Trabajadores: ${assignedWorkers.map((w) => w.fullName).join(", ")}`
+                              : "Sin trabajadores asignados"}
+                          </p>
                         </div>
                       </div>
-                      <Button variant="secondary" size="icon" onClick={() => { if (confirm(`Remove site "${site.name}"?`)) deleteSiteMutation.mutate(site.id); }}>
+                      <Button variant="secondary" size="icon" onClick={() => { if (confirm(`¿Eliminar obra "${site.name}"?`)) deleteSiteMutation.mutate(site.id); }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -900,13 +874,13 @@ export default function AdminDashboard() {
             {jobSites.length === 0 && (
               <div className="text-center py-12">
                 <Building2 className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">No job sites yet. Add your first site above.</p>
+                <p className="text-sm text-muted-foreground">Sin obras aún. Añade la primera arriba.</p>
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="feed" className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Worker Updates</h3>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Actualizaciones de trabajadores</h3>
             {allFeed.map((entry) => (
               <Card key={entry.id}>
                 <CardContent className="pt-4 space-y-2">
@@ -919,13 +893,13 @@ export default function AdminDashboard() {
                           <span className="text-xs font-bold text-primary">?</span>
                         </div>
                       )}
-                      <span className="text-sm font-medium">{entry.user?.fullName || "Unknown"}</span>
+                      <span className="text-sm font-medium">{entry.user?.fullName || "Desconocido"}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{format(new Date(entry.createdAt), "MMM d, h:mm a")}</span>
+                    <span className="text-xs text-muted-foreground">{format(new Date(entry.createdAt), "d MMM, HH:mm")}</span>
                   </div>
                   {entry.note && <p className="text-sm leading-relaxed">{entry.note}</p>}
                   {entry.imageUrl && (
-                    <img src={entry.imageUrl} alt="Work update" className="w-full rounded-md object-cover max-h-64" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    <img src={entry.imageUrl} alt="Actualización de trabajo" className="w-full rounded-md object-cover max-h-64" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                   )}
                 </CardContent>
               </Card>
@@ -933,7 +907,7 @@ export default function AdminDashboard() {
             {allFeed.length === 0 && (
               <div className="text-center py-12">
                 <FileText className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">No worker updates yet.</p>
+                <p className="text-sm text-muted-foreground">Sin actualizaciones aún. Los trabajadores pueden publicar desde su portal.</p>
               </div>
             )}
           </TabsContent>

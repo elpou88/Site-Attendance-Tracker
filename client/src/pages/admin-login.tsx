@@ -22,8 +22,8 @@ export default function AdminLoginPage() {
       await adminLogin(password);
     } catch (err: any) {
       toast({
-        title: "Access Denied",
-        description: "Invalid admin password",
+        title: "Acceso denegado",
+        description: "Contraseña de administrador incorrecta",
         variant: "destructive",
       });
     } finally {
@@ -44,28 +44,28 @@ export default function AdminLoginPage() {
           <div className="flex items-center justify-center gap-2 mb-1">
             <Shield className="w-5 h-5 text-primary" />
             <h1 className="text-xl font-bold tracking-tight" data-testid="text-admin-title">
-              Admin Panel
+              Panel de Administración
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Enter admin password to access the management panel
+            Introduce la contraseña de administrador para acceder al panel
           </p>
         </div>
 
         <Card>
           <CardHeader className="pb-4">
-            <h2 className="text-lg font-semibold text-center">Admin Access</h2>
+            <h2 className="text-lg font-semibold text-center">Acceso Administrador</h2>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="admin-password">Password</Label>
+                <Label htmlFor="admin-password">Contraseña</Label>
                 <div className="relative">
                   <Input
                     id="admin-password"
                     data-testid="input-admin-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter admin password"
+                    placeholder="Introduce la contraseña de administrador"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
@@ -91,12 +91,12 @@ export default function AdminLoginPage() {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Verifying...
+                    Verificando...
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <LogIn className="w-4 h-4" />
-                    Access Admin Panel
+                    Acceder al Panel
                   </span>
                 )}
               </Button>
@@ -105,7 +105,7 @@ export default function AdminLoginPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Restricted access - authorized personnel only
+          Acceso restringido — solo personal autorizado
         </p>
       </div>
     </div>
