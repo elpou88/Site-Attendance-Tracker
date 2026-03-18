@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, AdminProvider, useAuth, useAdmin } from "@/lib/auth";
+import { LanguageProvider } from "@/lib/language";
 import LoginPage from "@/pages/login";
 import WorkerDashboard from "@/pages/worker-dashboard";
 import AdminLoginPage from "@/pages/admin-login";
@@ -59,16 +60,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <AdminProvider>
-            <Toaster />
-            <Switch>
-              <Route path="/admin" component={AdminApp} />
-              <Route path="/" component={WorkerApp} />
-              <Route component={WorkerApp} />
-            </Switch>
-          </AdminProvider>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <AdminProvider>
+              <Toaster />
+              <Switch>
+                <Route path="/admin" component={AdminApp} />
+                <Route path="/" component={WorkerApp} />
+                <Route component={WorkerApp} />
+              </Switch>
+            </AdminProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

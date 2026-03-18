@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/lib/language";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
+  const { lang, setLang, t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,8 +25,8 @@ export default function LoginPage() {
       await login(username, password);
     } catch (err: any) {
       toast({
-        title: "Error al iniciar sesión",
-        description: err.message || "Usuario o contraseña incorrectos",
+        title: lang === "en" ? "Login Failed" : "Error al iniciar sesión",
+        description: err.message || (lang === "en" ? "Invalid username or password" : "Usuario o contraseña incorrectos"),
         variant: "destructive",
       });
     } finally {
@@ -35,6 +37,25 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 45%, #fed7aa 100%)"}}>
       <div className="w-full max-w-md">
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-1 bg-white/70 backdrop-blur rounded-full px-2 py-1 border shadow-sm">
+            <button
+              onClick={() => setLang("en")}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="button-lang-en"
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLang("es")}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${lang === "es" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="button-lang-es"
+            >
+              ES
+            </button>
+          </div>
+        </div>
+
         <div className="text-center mb-8">
           <img
             src={resolveLogoPath}
@@ -43,38 +64,38 @@ export default function LoginPage() {
             data-testid="img-logo"
           />
           <h1 className="text-xl font-bold tracking-tight" data-testid="text-app-title">
-            Portal del Trabajador
+            {t.workerPortal}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Inicia sesión para registrar tu asistencia y actualizaciones diarias
+            {t.loginSubtitle}
           </p>
         </div>
 
         <Card>
           <CardHeader className="pb-4">
-            <h2 className="text-lg font-semibold text-center">Acceso de Trabajador</h2>
+            <h2 className="text-lg font-semibold text-center">{t.loginTitle}</h2>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Usuario</Label>
+                <Label htmlFor="username">{t.username}</Label>
                 <Input
                   id="username"
                   data-testid="input-username"
-                  placeholder="Introduce tu usuario"
+                  placeholder={t.enterUsername}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password">{t.password}</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     data-testid="input-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Introduce tu contraseña"
+                    placeholder={t.enterPassword}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
@@ -100,12 +121,12 @@ export default function LoginPage() {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Entrando...
+                    {t.signingIn}
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <LogIn className="w-4 h-4" />
-                    Entrar
+                    {t.login}
                   </span>
                 )}
               </Button>
@@ -114,7 +135,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Contacta a tu encargado de obra para obtener tus credenciales
+          {t.contactManager}
         </p>
       </div>
     </div>

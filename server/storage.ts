@@ -10,11 +10,15 @@ import {
   type InsertChatMessage,
   type JobSite,
   type InsertJobSite,
+  type LeaveRequest,
+  type InsertLeaveRequest,
+  type UpdateLeaveRequest,
   users,
   attendance,
   feedEntries,
   chatMessages,
   jobSites,
+  leaveRequests,
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, desc, isNull, gte, lte } from "drizzle-orm";
@@ -98,6 +102,11 @@ export interface IStorage {
   createJobSite(site: InsertJobSite): Promise<JobSite>;
   updateJobSite(id: string, data: Partial<InsertJobSite>): Promise<JobSite | undefined>;
   deleteJobSite(id: string): Promise<void>;
+
+  createLeaveRequest(userId: string, data: InsertLeaveRequest, photoUrl?: string | null): Promise<LeaveRequest>;
+  getLeaveRequestsByUser(userId: string): Promise<(LeaveRequest & { user?: User })[]>;
+  getAllLeaveRequests(): Promise<(LeaveRequest & { user?: User })[]>;
+  updateLeaveRequestStatus(id: string, data: UpdateLeaveRequest): Promise<LeaveRequest | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -298,6 +307,58 @@ export class DatabaseStorage implements IStorage {
 
   async deleteJobSite(id: string): Promise<void> {
     return withRetry(() => db.delete(jobSites).where(eq(jobSites.id, id)).then(() => undefined));
+  }
+
+  async createLeaveRequest(userId: string, data: InsertLeaveRequest, photoUrl?: string | null): Promise<LeaveRequest> {
+    return withRetry(async () => {
+      const [req] = await db
+        .insert(leaveRequests)
+        .values({
+          userId,
+          type: data.type,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          notes: data.notes ?? null,
+          photoUrl: photoUrl ?? null,
+          status: "pending",
+        })
+        .returning();
+      return req;
+    });
+  }
+
+  async getLeaveRequestsByUser(userId: string): Promise<(LeaveRequest & { user?: User })[]> {
+    return withRetry(async () => {
+      const rows = await db
+        .select({ r: leaveRequests, u: users })
+        .from(leaveRequests)
+        .leftJoin(users, eq(leaveRequests.userId, users.id))
+        .where(eq(leaveRequests.userId, userId))
+        .orderBy(desc(leaveRequests.createdAt));
+      return rows.map((r) => ({ ...r.r, user: r.u ?? undefined }));
+    });
+  }
+
+  async getAllLeaveRequests(): Promise<(LeaveRequest & { user?: User })[]> {
+    return withRetry(async () => {
+      const rows = await db
+        .select({ r: leaveRequests, u: users })
+        .from(leaveRequests)
+        .leftJoin(users, eq(leaveRequests.userId, users.id))
+        .orderBy(desc(leaveRequests.createdAt));
+      return rows.map((r) => ({ ...r.r, user: r.u ?? undefined }));
+    });
+  }
+
+  async updateLeaveRequestStatus(id: string, data: UpdateLeaveRequest): Promise<LeaveRequest | undefined> {
+    return withRetry(async () => {
+      const [req] = await db
+        .update(leaveRequests)
+        .set({ status: data.status, adminNote: data.adminNote ?? null })
+        .where(eq(leaveRequests.id, id))
+        .returning();
+      return req;
+    });
   }
 }
 

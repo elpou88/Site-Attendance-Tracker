@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAdmin } from "@/lib/auth";
+import { useLanguage } from "@/lib/language";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,6 +15,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const { adminLogin } = useAdmin();
   const { toast } = useToast();
+  const { lang, setLang, t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +24,8 @@ export default function AdminLoginPage() {
       await adminLogin(password);
     } catch (err: any) {
       toast({
-        title: "Acceso denegado",
-        description: "Contraseña de administrador incorrecta",
+        title: lang === "en" ? "Access Denied" : "Acceso denegado",
+        description: lang === "en" ? "Incorrect admin password" : "Contraseña de administrador incorrecta",
         variant: "destructive",
       });
     } finally {
@@ -34,6 +36,25 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 45%, #fed7aa 100%)"}}>
       <div className="w-full max-w-md">
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-1 bg-white/70 backdrop-blur rounded-full px-2 py-1 border shadow-sm">
+            <button
+              onClick={() => setLang("en")}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="button-lang-en"
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLang("es")}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${lang === "es" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="button-lang-es"
+            >
+              ES
+            </button>
+          </div>
+        </div>
+
         <div className="text-center mb-8">
           <img
             src={resolveLogoPath}
@@ -44,28 +65,30 @@ export default function AdminLoginPage() {
           <div className="flex items-center justify-center gap-2 mb-1">
             <Shield className="w-5 h-5 text-primary" />
             <h1 className="text-xl font-bold tracking-tight" data-testid="text-admin-title">
-              Panel de Administración
+              {t.adminPanel}
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Introduce la contraseña de administrador para acceder al panel
+            {lang === "en" ? "Enter the admin password to access the panel" : "Introduce la contraseña de administrador para acceder al panel"}
           </p>
         </div>
 
         <Card>
           <CardHeader className="pb-4">
-            <h2 className="text-lg font-semibold text-center">Acceso Administrador</h2>
+            <h2 className="text-lg font-semibold text-center">
+              {lang === "en" ? "Admin Access" : "Acceso Administrador"}
+            </h2>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="admin-password">Contraseña</Label>
+                <Label htmlFor="admin-password">{t.password}</Label>
                 <div className="relative">
                   <Input
                     id="admin-password"
                     data-testid="input-admin-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Introduce la contraseña de administrador"
+                    placeholder={lang === "en" ? "Enter admin password" : "Introduce la contraseña de administrador"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
@@ -91,12 +114,12 @@ export default function AdminLoginPage() {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Verificando...
+                    {lang === "en" ? "Verifying..." : "Verificando..."}
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <LogIn className="w-4 h-4" />
-                    Acceder al Panel
+                    {lang === "en" ? "Access Panel" : "Acceder al Panel"}
                   </span>
                 )}
               </Button>
@@ -105,7 +128,7 @@ export default function AdminLoginPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Acceso restringido — solo personal autorizado
+          {lang === "en" ? "Restricted access — authorised personnel only" : "Acceso restringido — solo personal autorizado"}
         </p>
       </div>
     </div>

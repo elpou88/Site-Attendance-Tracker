@@ -3,7 +3,14 @@ import { createServer, type Server } from "http";
 import { storage, pool } from "./storage";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { loginSchema, insertUserSchema, updateContractSchema, insertJobSiteSchema } from "@shared/schema";
+import {
+  loginSchema,
+  insertUserSchema,
+  updateContractSchema,
+  insertJobSiteSchema,
+  insertLeaveRequestSchema,
+  updateLeaveRequestSchema,
+} from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -23,7 +30,7 @@ const multerStorage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: multerStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({ storage: multerStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 const ADMIN_PASSWORD = "123resolve2026";
 
@@ -63,10 +70,8 @@ export async function registerRoutes(
       const client = await pool.connect();
       await client.query("SELECT 1");
       client.release();
-      console.log("[health/db] Database connection OK");
       res.json({ status: "ok", db: "connected" });
     } catch (err: any) {
-      console.error("[health/db] Database connection FAILED:", err.message, "code:", err.code);
       res.status(500).json({ status: "error", message: err.message, code: err.code });
     }
   });
@@ -80,7 +85,6 @@ export async function registerRoutes(
       (req.session as any).isAdmin = true;
       return res.json({ success: true });
     } catch (error: any) {
-      console.error("[admin/login]", error);
       return res.status(500).json({ message: "Admin login failed" });
     }
   });
@@ -128,7 +132,6 @@ export async function registerRoutes(
       const { password, ...safeUser } = user;
       return res.json(safeUser);
     } catch (error: any) {
-      console.error("[auth/login]", error);
       return res.status(500).json({ message: "Login failed", error: error.message });
     }
   });
@@ -169,7 +172,6 @@ export async function registerRoutes(
       const safeWorkers = workers.map(({ password, ...w }) => w);
       res.json(safeWorkers);
     } catch (error: any) {
-      console.error("[GET /api/workers]", error);
       res.status(500).json({ message: "Failed to get workers", error: error.message });
     }
   });
@@ -191,7 +193,6 @@ export async function registerRoutes(
       const { password, ...safeWorker } = worker;
       return res.json(safeWorker);
     } catch (error: any) {
-      console.error("[POST /api/workers]", error);
       return res.status(500).json({ message: "Failed to create worker", error: error.message });
     }
   });
@@ -203,7 +204,6 @@ export async function registerRoutes(
       const { password, ...safeWorker } = worker;
       return res.json(safeWorker);
     } catch (error: any) {
-      console.error("[PATCH /api/workers/:id]", error);
       return res.status(500).json({ message: "Failed to update worker", error: error.message });
     }
   });
@@ -219,7 +219,6 @@ export async function registerRoutes(
       const { password, ...safeWorker } = worker;
       return res.json(safeWorker);
     } catch (error: any) {
-      console.error("[PATCH /api/workers/:id/contract]", error);
       return res.status(500).json({ message: "Failed to update contract", error: error.message });
     }
   });
@@ -235,7 +234,6 @@ export async function registerRoutes(
       const { password, ...safeWorker } = worker;
       return res.json(safeWorker);
     } catch (error: any) {
-      console.error("[POST /api/workers/:id/photo]", error);
       return res.status(500).json({ message: "Failed to upload photo", error: error.message });
     }
   });
@@ -245,7 +243,6 @@ export async function registerRoutes(
       await storage.deleteUser(req.params.id);
       res.json({ message: "Worker deleted" });
     } catch (error: any) {
-      console.error("[DELETE /api/workers/:id]", error);
       res.status(500).json({ message: "Failed to delete worker", error: error.message });
     }
   });
@@ -259,7 +256,6 @@ export async function registerRoutes(
       const record = await storage.signIn(req.user.id, req.body.lat, req.body.lng);
       return res.json(record);
     } catch (error: any) {
-      console.error("[attendance/sign-in]", error);
       return res.status(500).json({ message: "Sign in failed", error: error.message });
     }
   });
@@ -273,7 +269,6 @@ export async function registerRoutes(
       const record = await storage.signOut(active.id, req.body.lat, req.body.lng);
       return res.json(record);
     } catch (error: any) {
-      console.error("[attendance/sign-out]", error);
       return res.status(500).json({ message: "Sign out failed", error: error.message });
     }
   });
@@ -291,7 +286,6 @@ export async function registerRoutes(
       const record = await storage.updateAttendanceLocation(active.id, lat, lng);
       return res.json(record);
     } catch (error: any) {
-      console.error("[attendance/update-location]", error);
       return res.status(500).json({ message: "Failed to update location", error: error.message });
     }
   });
@@ -301,7 +295,6 @@ export async function registerRoutes(
       const active = await storage.getActiveAttendance(req.user.id);
       res.json({ signedIn: !!active, attendance: active || null });
     } catch (error: any) {
-      console.error("[attendance/status]", error);
       res.status(500).json({ message: "Failed to get status", error: error.message });
     }
   });
@@ -319,7 +312,22 @@ export async function registerRoutes(
       });
       res.json(safeRecords);
     } catch (error: any) {
-      console.error("[attendance/today]", error);
+      res.status(500).json({ message: "Failed to get attendance", error: error.message });
+    }
+  });
+
+  app.get("/api/attendance/date/:date", requireAdmin, async (req, res) => {
+    try {
+      const records = await storage.getAttendanceByDate(req.params.date);
+      const safeRecords = records.map((r) => {
+        if (r.user) {
+          const { password, ...safeUser } = r.user;
+          return { ...r, user: safeUser };
+        }
+        return r;
+      });
+      res.json(safeRecords);
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to get attendance", error: error.message });
     }
   });
@@ -329,7 +337,6 @@ export async function registerRoutes(
       const records = await storage.getAttendanceByUser(req.params.id);
       res.json(records);
     } catch (error: any) {
-      console.error("[attendance/worker/:id]", error);
       res.status(500).json({ message: "Failed to get attendance", error: error.message });
     }
   });
@@ -372,7 +379,6 @@ export async function registerRoutes(
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.send(buf);
     } catch (error: any) {
-      console.error("[export/attendance]", error);
       res.status(500).json({ message: "Failed to export attendance", error: error.message });
     }
   });
@@ -382,7 +388,6 @@ export async function registerRoutes(
       const sites = await storage.getAllJobSites();
       res.json(sites);
     } catch (error: any) {
-      console.error("[GET /api/job-sites]", error);
       res.status(500).json({ message: "Failed to get job sites", error: error.message });
     }
   });
@@ -396,7 +401,6 @@ export async function registerRoutes(
       const site = await storage.createJobSite(parsed.data);
       res.json(site);
     } catch (error: any) {
-      console.error("[POST /api/job-sites]", error);
       res.status(500).json({ message: "Failed to create job site", error: error.message });
     }
   });
@@ -407,7 +411,6 @@ export async function registerRoutes(
       if (!site) return res.status(404).json({ message: "Job site not found" });
       res.json(site);
     } catch (error: any) {
-      console.error("[PATCH /api/job-sites/:id]", error);
       res.status(500).json({ message: "Failed to update job site", error: error.message });
     }
   });
@@ -417,7 +420,6 @@ export async function registerRoutes(
       await storage.deleteJobSite(req.params.id);
       res.json({ message: "Job site deleted" });
     } catch (error: any) {
-      console.error("[DELETE /api/job-sites/:id]", error);
       res.status(500).json({ message: "Failed to delete job site", error: error.message });
     }
   });
@@ -432,7 +434,6 @@ export async function registerRoutes(
       });
       return res.json(entry);
     } catch (error: any) {
-      console.error("[feed POST]", error);
       return res.status(500).json({ message: "Failed to create feed entry", error: error.message });
     }
   });
@@ -442,7 +443,6 @@ export async function registerRoutes(
       const entries = await storage.getFeedEntriesByUser(req.user.id);
       res.json(entries);
     } catch (error: any) {
-      console.error("[feed/mine]", error);
       res.status(500).json({ message: "Failed to get feed", error: error.message });
     }
   });
@@ -459,7 +459,6 @@ export async function registerRoutes(
       });
       res.json(safeEntries);
     } catch (error: any) {
-      console.error("[feed/all]", error);
       res.status(500).json({ message: "Failed to get feed", error: error.message });
     }
   });
@@ -476,7 +475,6 @@ export async function registerRoutes(
       });
       res.json(safeMessages);
     } catch (error: any) {
-      console.error("[chat GET]", error);
       res.status(500).json({ message: "Failed to get messages", error: error.message });
     }
   });
@@ -495,8 +493,72 @@ export async function registerRoutes(
       const { password, ...safeUser } = user!;
       return res.json({ ...chatMsg, user: safeUser });
     } catch (error: any) {
-      console.error("[chat POST]", error);
       return res.status(500).json({ message: "Failed to send message", error: error.message });
+    }
+  });
+
+  app.post("/api/leave-requests", requireAuth, upload.single("photo"), async (req: any, res) => {
+    try {
+      const parsed = insertLeaveRequestSchema.safeParse({
+        type: req.body.type,
+        startDate: req.body.startDate,
+        endDate: req.body.endDate,
+        notes: req.body.notes || null,
+      });
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid leave request data", errors: parsed.error.errors });
+      }
+      const photoUrl = req.file ? `/uploads/${req.file.filename}` : null;
+      const request = await storage.createLeaveRequest(req.user.id, parsed.data, photoUrl);
+      return res.json(request);
+    } catch (error: any) {
+      return res.status(500).json({ message: "Failed to submit leave request", error: error.message });
+    }
+  });
+
+  app.get("/api/leave-requests/mine", requireAuth, async (req: any, res) => {
+    try {
+      const requests = await storage.getLeaveRequestsByUser(req.user.id);
+      const safe = requests.map((r) => {
+        if (r.user) {
+          const { password, ...safeUser } = r.user;
+          return { ...r, user: safeUser };
+        }
+        return r;
+      });
+      res.json(safe);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to get leave requests", error: error.message });
+    }
+  });
+
+  app.get("/api/leave-requests", requireAdmin, async (_req, res) => {
+    try {
+      const requests = await storage.getAllLeaveRequests();
+      const safe = requests.map((r) => {
+        if (r.user) {
+          const { password, ...safeUser } = r.user;
+          return { ...r, user: safeUser };
+        }
+        return r;
+      });
+      res.json(safe);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to get leave requests", error: error.message });
+    }
+  });
+
+  app.patch("/api/leave-requests/:id", requireAdmin, async (req, res) => {
+    try {
+      const parsed = updateLeaveRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid data" });
+      }
+      const updated = await storage.updateLeaveRequestStatus(req.params.id, parsed.data);
+      if (!updated) return res.status(404).json({ message: "Request not found" });
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(500).json({ message: "Failed to update leave request", error: error.message });
     }
   });
 

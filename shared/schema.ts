@@ -55,6 +55,19 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").notNull().default(sql`NOW()`),
 });
 
+export const leaveRequests = pgTable("leave_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("pending"),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  notes: text("notes"),
+  photoUrl: text("photo_url"),
+  adminNote: text("admin_note"),
+  createdAt: timestamp("created_at").notNull().default(sql`NOW()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -98,6 +111,18 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
   message: true,
 });
 
+export const insertLeaveRequestSchema = z.object({
+  type: z.enum(["annual_leave", "sick_note"]),
+  startDate: z.string().min(1),
+  endDate: z.string().min(1),
+  notes: z.string().optional().nullable(),
+});
+
+export const updateLeaveRequestSchema = z.object({
+  status: z.enum(["approved", "rejected"]),
+  adminNote: z.string().optional().nullable(),
+});
+
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -114,3 +139,6 @@ export type FeedEntry = typeof feedEntries.$inferSelect;
 export type InsertFeedEntry = z.infer<typeof insertFeedEntrySchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type LeaveRequest = typeof leaveRequests.$inferSelect;
+export type InsertLeaveRequest = z.infer<typeof insertLeaveRequestSchema>;
+export type UpdateLeaveRequest = z.infer<typeof updateLeaveRequestSchema>;
