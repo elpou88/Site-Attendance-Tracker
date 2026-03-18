@@ -33,7 +33,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 45%, #fed7aa 100%)"}}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img

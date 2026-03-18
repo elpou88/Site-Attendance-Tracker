@@ -300,7 +300,7 @@ export default function WorkerDashboard() {
   const activeAttendance = attendanceStatus?.attendance;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{background: "linear-gradient(160deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)"}}>
       <header className="border-b bg-card">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
