@@ -21,7 +21,41 @@ export function parseDbUrl(url: string): ParsedDbUrl {
   }
 }
 
+export function logDbEnvDiagnostics() {
+  const vars = [
+    "DATABASE_PRIVATE_URL",
+    "DATABASE_URL",
+    "PGHOST",
+    "PGPORT",
+    "PGUSER",
+    "PGDATABASE",
+    "PGPASSWORD",
+    "POSTGRES_HOST",
+    "POSTGRES_PORT",
+    "POSTGRES_USER",
+    "POSTGRES_DB",
+  ];
+  console.log("[db] ENV CHECK:");
+  for (const v of vars) {
+    const val = process.env[v];
+    if (!val) {
+      console.log(`[db]   ${v} = NOT SET`);
+    } else if (v.toLowerCase().includes("password") || v.toLowerCase().includes("url") || v.toLowerCase().includes("private")) {
+      try {
+        const u = new URL(val);
+        console.log(`[db]   ${v} = SET (host=${u.hostname} port=${u.port || 5432} db=${u.pathname.replace(/^\//, "")})`);
+      } catch {
+        console.log(`[db]   ${v} = SET (not a URL, length=${val.length})`);
+      }
+    } else {
+      console.log(`[db]   ${v} = ${val}`);
+    }
+  }
+}
+
 export function getDbUrl(): string {
+  logDbEnvDiagnostics();
+
   // Railway provides DATABASE_PRIVATE_URL for internal connections
   const privateUrl = process.env.DATABASE_PRIVATE_URL || "";
   if (privateUrl && privateUrl.includes("://")) {
@@ -40,7 +74,6 @@ export function getDbUrl(): string {
   const host =
     process.env.PGHOST ||
     process.env.POSTGRES_HOST ||
-    process.env.RAILWAY_PRIVATE_DOMAIN ||
     "";
   const port = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
   const user = process.env.PGUSER || process.env.POSTGRES_USER || "postgres";

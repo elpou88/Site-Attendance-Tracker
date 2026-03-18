@@ -58,6 +58,20 @@ export async function registerRoutes(
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Database connectivity check — logs result to Railway console
+  app.get("/api/health/db", async (_req, res) => {
+    try {
+      const client = await pool.connect();
+      await client.query("SELECT 1");
+      client.release();
+      console.log("[health/db] Database connection OK");
+      res.json({ status: "ok", db: "connected" });
+    } catch (err: any) {
+      console.error("[health/db] Database connection FAILED:", err.message, "code:", err.code);
+      res.status(500).json({ status: "error", message: err.message, code: err.code });
+    }
+  });
+
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { password } = req.body;
