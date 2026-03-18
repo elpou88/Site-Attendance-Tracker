@@ -39,6 +39,14 @@ export async function runMigrations() {
     console.log("[migrate] Connected successfully, running migrations...");
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS job_sites (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        name TEXT NOT NULL,
+        address TEXT
+      );
+    `);
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
         username TEXT NOT NULL UNIQUE,
@@ -46,6 +54,9 @@ export async function runMigrations() {
         full_name TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'worker',
         active BOOLEAN NOT NULL DEFAULT true,
+        profile_photo TEXT,
+        hourly_rate REAL,
+        job_site_id VARCHAR,
         contract_type TEXT,
         contract_start_date DATE,
         contract_expiry_date DATE,
@@ -55,6 +66,10 @@ export async function runMigrations() {
         holiday_days_used INTEGER DEFAULT 0
       );
     `);
+
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo TEXT;`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS hourly_rate REAL;`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS job_site_id VARCHAR;`);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS attendance (

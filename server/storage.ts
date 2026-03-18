@@ -8,13 +8,16 @@ import {
   type InsertFeedEntry,
   type ChatMessage,
   type InsertChatMessage,
+  type JobSite,
+  type InsertJobSite,
   users,
   attendance,
   feedEntries,
   chatMessages,
+  jobSites,
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, and, desc, isNull } from "drizzle-orm";
+import { eq, and, desc, isNull, gte, lte } from "drizzle-orm";
 import pg from "pg";
 import { getDbUrl, isSslDisabled, parseDbUrl } from "./db-url";
 
@@ -72,7 +75,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllWorkers(): Promise<User[]>;
-  updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined>;
+  updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
   updateContract(id: string, data: UpdateContract): Promise<User | undefined>;
   deleteUser(id: string): Promise<void>;
 
@@ -82,6 +85,7 @@ export interface IStorage {
   getActiveAttendance(userId: string): Promise<Attendance | undefined>;
   getAttendanceByDate(date: string): Promise<(Attendance & { user?: User })[]>;
   getAttendanceByUser(userId: string): Promise<Attendance[]>;
+  getAttendanceInRange(from: string, to: string): Promise<(Attendance & { user?: User })[]>;
 
   createFeedEntry(entry: InsertFeedEntry): Promise<FeedEntry>;
   getFeedEntriesByUser(userId: string): Promise<FeedEntry[]>;
@@ -89,6 +93,11 @@ export interface IStorage {
 
   createChatMessage(msg: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(limit?: number): Promise<(ChatMessage & { user?: User })[]>;
+
+  getAllJobSites(): Promise<JobSite[]>;
+  createJobSite(site: InsertJobSite): Promise<JobSite>;
+  updateJobSite(id: string, data: Partial<InsertJobSite>): Promise<JobSite | undefined>;
+  deleteJobSite(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -117,7 +126,7 @@ export class DatabaseStorage implements IStorage {
     return withRetry(() => db.select().from(users).where(eq(users.role, "worker")));
   }
 
-  async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
+  async updateUser(id: string, data: Partial<User>): Promise<User | undefined> {
     return withRetry(async () => {
       const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
       return user;
@@ -210,6 +219,18 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
+  async getAttendanceInRange(from: string, to: string): Promise<(Attendance & { user?: User })[]> {
+    return withRetry(async () => {
+      const rows = await db
+        .select({ a: attendance, u: users })
+        .from(attendance)
+        .leftJoin(users, eq(attendance.userId, users.id))
+        .where(and(gte(attendance.date, from), lte(attendance.date, to)))
+        .orderBy(desc(attendance.signInTime));
+      return rows.map((r) => ({ ...r.a, user: r.u ?? undefined }));
+    });
+  }
+
   async createFeedEntry(entry: InsertFeedEntry): Promise<FeedEntry> {
     return withRetry(async () => {
       const [feedEntry] = await db.insert(feedEntries).values(entry).returning();
@@ -255,6 +276,28 @@ export class DatabaseStorage implements IStorage {
         .limit(limit);
       return rows.map((r) => ({ ...r.m, user: r.u ?? undefined })).reverse();
     });
+  }
+
+  async getAllJobSites(): Promise<JobSite[]> {
+    return withRetry(() => db.select().from(jobSites).orderBy(jobSites.name));
+  }
+
+  async createJobSite(site: InsertJobSite): Promise<JobSite> {
+    return withRetry(async () => {
+      const [s] = await db.insert(jobSites).values(site).returning();
+      return s;
+    });
+  }
+
+  async updateJobSite(id: string, data: Partial<InsertJobSite>): Promise<JobSite | undefined> {
+    return withRetry(async () => {
+      const [s] = await db.update(jobSites).set(data).where(eq(jobSites.id, id)).returning();
+      return s;
+    });
+  }
+
+  async deleteJobSite(id: string): Promise<void> {
+    return withRetry(() => db.delete(jobSites).where(eq(jobSites.id, id)).then(() => undefined));
   }
 }
 

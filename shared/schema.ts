@@ -1,7 +1,13 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, doublePrecision, date, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, doublePrecision, date, integer, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const jobSites = pgTable("job_sites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  address: text("address"),
+});
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -10,6 +16,9 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   role: text("role").notNull().default("worker"),
   active: boolean("active").notNull().default(true),
+  profilePhoto: text("profile_photo"),
+  hourlyRate: real("hourly_rate"),
+  jobSiteId: varchar("job_site_id"),
   contractType: text("contract_type"),
   contractStartDate: date("contract_start_date"),
   contractExpiryDate: date("contract_expiry_date"),
@@ -61,6 +70,13 @@ export const updateContractSchema = z.object({
   sickDaysUsed: z.number().int().min(0).nullable().optional(),
   holidayDaysTotal: z.number().int().min(0).nullable().optional(),
   holidayDaysUsed: z.number().int().min(0).nullable().optional(),
+  hourlyRate: z.number().min(0).nullable().optional(),
+  jobSiteId: z.string().nullable().optional(),
+});
+
+export const insertJobSiteSchema = z.object({
+  name: z.string().min(1),
+  address: z.string().optional().nullable(),
 });
 
 export const insertAttendanceSchema = createInsertSchema(attendance).pick({
@@ -89,6 +105,8 @@ export const loginSchema = z.object({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateContract = z.infer<typeof updateContractSchema>;
+export type JobSite = typeof jobSites.$inferSelect;
+export type InsertJobSite = z.infer<typeof insertJobSiteSchema>;
 export type User = typeof users.$inferSelect;
 export type Attendance = typeof attendance.$inferSelect;
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;

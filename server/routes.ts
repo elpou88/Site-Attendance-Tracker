@@ -3,11 +3,12 @@ import { createServer, type Server } from "http";
 import { storage, pool } from "./storage";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { loginSchema, insertUserSchema, updateContractSchema } from "@shared/schema";
+import { loginSchema, insertUserSchema, updateContractSchema, insertJobSiteSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
+import * as XLSX from "xlsx";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -53,12 +54,10 @@ export async function registerRoutes(
     })
   );
 
-  // Health check — always returns 200 so Railway knows the server is up
   app.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Database connectivity check — logs result to Railway console
   app.get("/api/health/db", async (_req, res) => {
     try {
       const client = await pool.connect();
@@ -225,6 +224,22 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/workers/:id/photo", requireAdmin, upload.single("photo"), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No photo uploaded" });
+      }
+      const photoUrl = `/uploads/${req.file.filename}`;
+      const worker = await storage.updateUser(req.params.id, { profilePhoto: photoUrl } as any);
+      if (!worker) return res.status(404).json({ message: "Worker not found" });
+      const { password, ...safeWorker } = worker;
+      return res.json(safeWorker);
+    } catch (error: any) {
+      console.error("[POST /api/workers/:id/photo]", error);
+      return res.status(500).json({ message: "Failed to upload photo", error: error.message });
+    }
+  });
+
   app.delete("/api/workers/:id", requireAdmin, async (req, res) => {
     try {
       await storage.deleteUser(req.params.id);
@@ -316,6 +331,94 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[attendance/worker/:id]", error);
       res.status(500).json({ message: "Failed to get attendance", error: error.message });
+    }
+  });
+
+  app.get("/api/export/attendance", requireAdmin, async (req, res) => {
+    try {
+      const from = (req.query.from as string) || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+      const to = (req.query.to as string) || new Date().toISOString().split("T")[0];
+
+      const records = await storage.getAttendanceInRange(from, to);
+
+      const rows = records.map((r) => {
+        const hoursWorked = r.signOutTime && r.signInTime
+          ? Math.round(((new Date(r.signOutTime).getTime() - new Date(r.signInTime).getTime()) / 3600000) * 100) / 100
+          : null;
+        const rate = r.user?.hourlyRate ?? 0;
+        const pay = hoursWorked !== null ? Math.round(hoursWorked * rate * 100) / 100 : null;
+        return {
+          "Date": r.date,
+          "Worker": r.user?.fullName || "Unknown",
+          "Username": r.user?.username || "",
+          "Sign In": r.signInTime ? new Date(r.signInTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "",
+          "Sign Out": r.signOutTime ? new Date(r.signOutTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "Still on site",
+          "Hours Worked": hoursWorked ?? "",
+          "Hourly Rate (£)": rate || "",
+          "Pay (£)": pay ?? "",
+        };
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 10 },
+        { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 10 },
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Disposition", `attachment; filename="attendance-${from}-to-${to}.xlsx"`);
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.send(buf);
+    } catch (error: any) {
+      console.error("[export/attendance]", error);
+      res.status(500).json({ message: "Failed to export attendance", error: error.message });
+    }
+  });
+
+  app.get("/api/job-sites", requireAdmin, async (_req, res) => {
+    try {
+      const sites = await storage.getAllJobSites();
+      res.json(sites);
+    } catch (error: any) {
+      console.error("[GET /api/job-sites]", error);
+      res.status(500).json({ message: "Failed to get job sites", error: error.message });
+    }
+  });
+
+  app.post("/api/job-sites", requireAdmin, async (req, res) => {
+    try {
+      const parsed = insertJobSiteSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid job site data" });
+      }
+      const site = await storage.createJobSite(parsed.data);
+      res.json(site);
+    } catch (error: any) {
+      console.error("[POST /api/job-sites]", error);
+      res.status(500).json({ message: "Failed to create job site", error: error.message });
+    }
+  });
+
+  app.patch("/api/job-sites/:id", requireAdmin, async (req, res) => {
+    try {
+      const site = await storage.updateJobSite(req.params.id, req.body);
+      if (!site) return res.status(404).json({ message: "Job site not found" });
+      res.json(site);
+    } catch (error: any) {
+      console.error("[PATCH /api/job-sites/:id]", error);
+      res.status(500).json({ message: "Failed to update job site", error: error.message });
+    }
+  });
+
+  app.delete("/api/job-sites/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteJobSite(req.params.id);
+      res.json({ message: "Job site deleted" });
+    } catch (error: any) {
+      console.error("[DELETE /api/job-sites/:id]", error);
+      res.status(500).json({ message: "Failed to delete job site", error: error.message });
     }
   });
 
